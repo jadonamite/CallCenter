@@ -37,13 +37,13 @@ export function TeamDonut({ teams, outcomes }: Props) {
   const reachedTotal = outcomes.reduce((n, o) => n + o.count, 0);
 
   return (
-    <div className="card-soft bg-card flex flex-col rounded-3xl p-6">
+    <div className="card-soft bg-card flex h-full min-w-0 flex-col rounded-3xl p-5 sm:p-6">
       <h2 className="text-base font-bold">Collation by team</h2>
       <p className="text-muted-foreground mt-0.5 text-xs">
         Every contact credited to the team that brought it
       </p>
 
-      <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
+      <div className="mt-2 flex min-w-0 flex-wrap items-center justify-center gap-4 sm:gap-5">
         <div className="relative shrink-0">
           <ChartContainer config={config} className="aspect-square h-[172px]">
             <PieChart>
@@ -70,7 +70,7 @@ export function TeamDonut({ teams, outcomes }: Props) {
             </span>
           </div>
         </div>
-        <ul className="w-full min-w-0 space-y-2.5">
+        <ul className="min-w-[200px] flex-1 space-y-2.5">
           {data.map((t) => (
             <li key={t.id} className="flex min-w-0 items-center gap-2 text-sm">
               <span

@@ -9,7 +9,7 @@ export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav className="border-border bg-card/85 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl md:hidden">
-      <div className="grid grid-cols-4 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+      <div className="grid grid-cols-5 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (

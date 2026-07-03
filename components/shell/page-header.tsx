@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Props {
@@ -17,6 +19,13 @@ export function PageHeader({ title, subtitle, children }: Props) {
       </div>
       <div className="flex items-center gap-2.5">
         {children}
+        <Link
+          href="/settings"
+          aria-label="Settings"
+          className="glass-pill text-muted-foreground hover:text-foreground flex size-10 items-center justify-center transition-colors md:hidden"
+        >
+          <Settings className="size-4.5" />
+        </Link>
         <ThemeToggle />
       </div>
     </header>

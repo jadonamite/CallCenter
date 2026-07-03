@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PhoneCall } from "lucide-react";
+import { PhoneCall, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
 
@@ -48,7 +48,22 @@ export function Sidebar({ reached, target, daysLeft }: Props) {
         })}
       </nav>
 
-      <div className="mt-auto hidden p-4 lg:block">
+      <div className="mt-auto flex flex-col gap-1 px-2.5 pb-2 lg:px-4">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors",
+            isActive(pathname, "/settings")
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
+        >
+          <Settings className="size-4.5 shrink-0" />
+          <span className="hidden lg:block">Settings</span>
+        </Link>
+      </div>
+
+      <div className="hidden p-4 lg:block">
         <div className="bg-secondary/60 rounded-2xl p-4">
           <p className="text-[10px] font-bold tracking-widest uppercase opacity-60">
             Event in {daysLeft} day{daysLeft === 1 ? "" : "s"}

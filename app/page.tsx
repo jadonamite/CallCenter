@@ -1,4 +1,9 @@
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/header";
+import { PageHeader } from "@/components/shell/page-header";
+import { fmtEventDay, getEvent, LIVE_EVENT_ID } from "@/lib/events";
 import { StatCards, type Stat } from "@/components/dashboard/stat-cards";
 import { OutreachChart } from "@/components/dashboard/outreach-chart";
 import { TeamDonut, type TeamSlice } from "@/components/dashboard/team-donut";
@@ -20,6 +25,43 @@ import {
 } from "@/lib/data";
 
 export default async function DashboardPage() {
+  const store = await cookies();
+  const adminName = store.get("admin_name")?.value ?? "Admin";
+  const activeEvent = getEvent(store.get("active_event")?.value);
+
+  // an event whose campaign hasn't started yet has nothing to aggregate
+  if (activeEvent.id !== LIVE_EVENT_ID) {
+    const daysToCampaign = Math.max(
+      Math.ceil(
+        (new Date(activeEvent.campaignStart).getTime() - Date.now()) / 86_400_000
+      ),
+      0
+    );
+    return (
+      <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
+        <PageHeader title={`Hello, ${adminName} 👋`} subtitle={activeEvent.name} />
+        <div className="card-soft bg-card flex flex-col items-center gap-3 rounded-3xl px-6 py-16 text-center">
+          <span className="bg-accent text-accent-foreground flex size-12 items-center justify-center rounded-2xl">
+            <CalendarDays className="size-5" />
+          </span>
+          <h2 className="text-lg font-bold">{activeEvent.name}</h2>
+          <p className="text-muted-foreground max-w-md text-sm">
+            {fmtEventDay(activeEvent)} · target{" "}
+            {activeEvent.target.toLocaleString()} people · admin{" "}
+            {activeEvent.admin}. Collation opens with the campaign in{" "}
+            <b>{daysToCampaign} days</b> — nothing to aggregate yet.
+          </p>
+          <Link
+            href="/events"
+            className="bg-primary text-primary-foreground mt-2 rounded-full px-5 py-2.5 text-xs font-bold"
+          >
+            Switch event
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const groups = await getGroups();
   const roots = buildTree(groups);
   const contacts = generateContacts(roots);
@@ -42,13 +84,11 @@ export default async function DashboardPage() {
   const targetToDate = Math.round(((TODAY_INDEX + 1) / PLAN_DAYS) * PLAN_TARGET);
   const paceDelta = reached.length - targetToDate;
 
-  // weekly sparklines
-  const weeks = Array.from({ length: week }, (_, i) =>
-    daily.filter((d) => d.week === i + 1)
-  );
-  const sparkReached = weeks.map((w) => w.reduce((n, d) => n + d.called + d.messaged, 0));
-  const sparkCalled = weeks.map((w) => w.reduce((n, d) => n + d.called, 0));
-  const sparkMessaged = weeks.map((w) => w.reduce((n, d) => n + d.messaged, 0));
+  // sparklines: the last 7 days of activity
+  const last7 = daily.slice(-7);
+  const sparkReached = last7.map((d) => d.called + d.messaged);
+  const sparkCalled = last7.map((d) => d.called);
+  const sparkMessaged = last7.map((d) => d.messaged);
 
   const stats: Stat[] = [
     {
@@ -111,6 +151,8 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
       <DashboardHeader
+        adminName={adminName}
+        eventName={activeEvent.name}
         week={week}
         totalWeeks={PLAN_WEEKS}
         contacts={contacts.length}
@@ -121,10 +163,12 @@ export default async function DashboardPage() {
       <StatCards stats={stats} />
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <OutreachChart daily={daily} pace={pace} planWeeks={PLAN_WEEKS} />
         </div>
-        <TeamDonut teams={teamSlices} outcomes={outcomes} />
+        <div className="min-w-0">
+          <TeamDonut teams={teamSlices} outcomes={outcomes} />
+        </div>
       </div>
 
       <Leaderboard rows={rollup} teamColorOf={teamColorOf} viewAllHref="/teams" />
