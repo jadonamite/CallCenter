@@ -22,14 +22,14 @@ export interface OutreachEvent {
  */
 export const EVENTS: OutreachEvent[] = [
   {
-    id: "impact-july",
-    name: "Impact Service",
+    id: "love-expression",
+    name: "Love Expression",
     admin: "Admin",
-    target: 560,
+    target: 5000,
     eventStart: "2026-07-12T09:00:00+01:00",
     eventEnd: "2026-07-12T13:00:00+01:00",
-    campaignStart: "2026-06-29",
-    campaignDays: 14,
+    campaignStart: "2026-07-01",
+    campaignDays: 11,
     status: "live",
   },
   {
@@ -45,7 +45,7 @@ export const EVENTS: OutreachEvent[] = [
   },
 ];
 
-export const LIVE_EVENT_ID = "impact-july";
+export const LIVE_EVENT_ID = "love-expression";
 
 export function getEvent(id: string | undefined): OutreachEvent {
   return EVENTS.find((e) => e.id === id) ?? EVENTS[0];

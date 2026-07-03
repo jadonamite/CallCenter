@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -27,25 +31,85 @@ interface Props {
   hideRank?: boolean;
 }
 
+/** A team with its senior cells, each carrying its own cells (rebuilt from the flat, tree-ordered rows). */
+interface TeamBlock {
+  team: GroupStats;
+  seniors: { senior: GroupStats; cells: GroupStats[] }[];
+}
+
+function toBlocks(rows: GroupStats[]): TeamBlock[] {
+  const blocks: TeamBlock[] = [];
+  for (const r of rows) {
+    if (r.depth === 0) {
+      blocks.push({ team: r, seniors: [] });
+    } else if (r.depth === 1) {
+      blocks[blocks.length - 1]?.seniors.push({ senior: r, cells: [] });
+    } else {
+      const b = blocks[blocks.length - 1];
+      b?.seniors[b.seniors.length - 1]?.cells.push(r);
+    }
+  }
+  return blocks;
+}
+
 export function Leaderboard({
   rows,
   teamColorOf,
   title = "Team standings",
-  subtitle = "Contacts collated per team, rolled up through senior cells and cells — every number traces back to the group that brought it",
+  subtitle = "Contacts collated per team, rolled up through senior cells and cells — tap a team or senior cell to drill in",
   viewAllHref,
   hideRank = false,
 }: Props) {
-  const teams = rows.filter((r) => r.level === "TEAM");
+  // Default: teams expanded (senior cells visible), senior cells collapsed (cells hidden).
+  const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
+  const [expandedSeniors, setExpandedSeniors] = useState<Set<string>>(new Set());
+
+  const toggle = (set: Set<string>, id: string) => {
+    const next = new Set(set);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  };
+
+  const blocks = toBlocks(rows);
+  const teams = blocks.map((b) => b.team);
   const ranked = [...teams].sort((a, b) => b.reached - a.reached);
   const rankOf = new Map(ranked.map((t, i) => [t.id, i + 1]));
+  blocks.sort((a, b) => (rankOf.get(a.team.id) ?? 99) - (rankOf.get(b.team.id) ?? 99));
 
-  // regroup rows into team blocks and order the blocks by rank
-  const blocks: GroupStats[][] = [];
-  for (const r of rows) {
-    if (r.depth === 0) blocks.push([r]);
-    else blocks[blocks.length - 1]?.push(r);
+  const colCount = 6 + (hideRank ? 0 : 1);
+
+  function metricCells(r: GroupStats, teamColor: string) {
+    const coverage = r.total ? Math.round((r.reached / r.total) * 100) : 0;
+    return (
+      <>
+        <TableCell className="text-right font-bold tabular-nums">
+          {r.total.toLocaleString()}
+        </TableCell>
+        <TableCell className="text-right font-medium tabular-nums">
+          {r.reached.toLocaleString()}
+        </TableCell>
+        <TableCell className="text-muted-foreground text-right tabular-nums">
+          {r.called.toLocaleString()}
+        </TableCell>
+        <TableCell className="text-muted-foreground text-right tabular-nums">
+          {r.messaged.toLocaleString()}
+        </TableCell>
+        <TableCell className="rounded-r-2xl">
+          <div className="flex items-center gap-2">
+            <div className="bg-secondary h-2 w-full overflow-hidden rounded-full">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${coverage}%`, background: teamColor }}
+              />
+            </div>
+            <span className="text-muted-foreground w-9 text-right text-xs font-semibold tabular-nums">
+              {coverage}%
+            </span>
+          </div>
+        </TableCell>
+      </>
+    );
   }
-  blocks.sort((a, b) => (rankOf.get(a[0].id) ?? 99) - (rankOf.get(b[0].id) ?? 99));
 
   return (
     <div className="card-soft bg-card rounded-3xl p-5 sm:p-6">
@@ -65,105 +129,162 @@ export function Leaderboard({
       </div>
       <div className="scroll-x mt-4">
         <div className="min-w-[840px]">
-        <Table className="sticky-first">
-          <TableHeader>
-            <TableRow className="border-none">
-              {!hideRank && <TableHead className="w-12">Rank</TableHead>}
-              <TableHead>Group</TableHead>
-              <TableHead className="text-right">Collated</TableHead>
-              <TableHead className="text-right">Reached</TableHead>
-              <TableHead className="text-right">Called</TableHead>
-              <TableHead className="text-right">Messaged</TableHead>
-              <TableHead className="w-[190px]">Coverage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {blocks.flatMap((block) => {
-              const teamColor = teamColorOf[block[0].id];
-              return block.map((r) => {
-                const coverage = r.total ? Math.round((r.reached / r.total) * 100) : 0;
-                const isTeam = r.level === "TEAM";
+          <Table className="sticky-first">
+            <TableHeader>
+              <TableRow className="border-none">
+                {!hideRank && <TableHead className="w-12">Rank</TableHead>}
+                <TableHead>Group</TableHead>
+                <TableHead className="text-right">Collated</TableHead>
+                <TableHead className="text-right">Reached</TableHead>
+                <TableHead className="text-right">Called</TableHead>
+                <TableHead className="text-right">Messaged</TableHead>
+                <TableHead className="w-[190px]">Coverage</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {blocks.map(({ team, seniors }) => {
+                const teamColor = teamColorOf[team.id];
+                const teamOpen = !collapsedTeams.has(team.id);
                 return (
-                  <TableRow
-                    key={r.id}
-                    className="border-border/60"
-                    style={
-                      isTeam
-                        ? { background: `color-mix(in srgb, ${teamColor} 7%, transparent)` }
-                        : undefined
-                    }
-                  >
-                    {!hideRank && (
-                      <TableCell className="text-muted-foreground rounded-l-2xl font-bold tabular-nums">
-                        {isTeam ? `#${rankOf.get(r.id)}` : ""}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <div
-                        className="flex items-center gap-2.5"
-                        style={{ paddingLeft: `${r.depth * 20}px` }}
-                      >
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full",
-                            isTeam ? "size-2.5" : "size-1.5 opacity-60"
-                          )}
-                          style={{ background: teamColor }}
-                        />
-                        {isTeam ? (
+                  <FragmentRows key={team.id}>
+                    {/* team row */}
+                    <TableRow
+                      className="border-border/60 cursor-pointer"
+                      style={{ background: `color-mix(in srgb, ${teamColor} 7%, transparent)` }}
+                      onClick={() => setCollapsedTeams((s) => toggle(s, team.id))}
+                    >
+                      {!hideRank && (
+                        <TableCell className="text-muted-foreground rounded-l-2xl font-bold tabular-nums">
+                          #{rankOf.get(team.id)}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <ChevronRight
+                            className={cn(
+                              "text-muted-foreground size-4 shrink-0 transition-transform",
+                              teamOpen && "rotate-90"
+                            )}
+                          />
+                          <span className="size-2.5 shrink-0 rounded-full" style={{ background: teamColor }} />
                           <Link
-                            href={`/teams/${r.id}`}
+                            href={`/teams/${team.id}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="font-bold hover:underline"
                           >
-                            {r.name}
+                            {team.name}
                           </Link>
-                        ) : (
-                          <span className="font-medium">{r.name}</span>
-                        )}
-                        <span
-                          className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
-                          style={{
-                            background: `color-mix(in srgb, ${teamColor} 14%, transparent)`,
-                            color: teamColor,
-                          }}
-                        >
-                          {LEVEL_LABEL[r.level]}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-bold tabular-nums">
-                      {r.total.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
-                      {r.reached.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-right tabular-nums">
-                      {r.called.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-right tabular-nums">
-                      {r.messaged.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="rounded-r-2xl">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-secondary h-2 w-full overflow-hidden rounded-full">
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${coverage}%`, background: teamColor }}
-                          />
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
+                            style={{
+                              background: `color-mix(in srgb, ${teamColor} 14%, transparent)`,
+                              color: teamColor,
+                            }}
+                          >
+                            {LEVEL_LABEL.TEAM}
+                          </span>
                         </div>
-                        <span className="text-muted-foreground w-9 text-right text-xs font-semibold tabular-nums">
-                          {coverage}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      {metricCells(team, teamColor)}
+                    </TableRow>
+
+                    {/* senior cells */}
+                    {teamOpen &&
+                      seniors.map(({ senior, cells }) => {
+                        const seniorOpen = expandedSeniors.has(senior.id);
+                        return (
+                          <FragmentRows key={senior.id}>
+                            <TableRow
+                              className={cn(
+                                "border-border/60",
+                                cells.length > 0 && "cursor-pointer"
+                              )}
+                              onClick={() =>
+                                cells.length > 0 &&
+                                setExpandedSeniors((s) => toggle(s, senior.id))
+                              }
+                            >
+                              {!hideRank && <TableCell className="rounded-l-2xl" />}
+                              <TableCell>
+                                <div className="flex items-center gap-2.5" style={{ paddingLeft: "20px" }}>
+                                  {cells.length > 0 ? (
+                                    <ChevronRight
+                                      className={cn(
+                                        "text-muted-foreground size-3.5 shrink-0 transition-transform",
+                                        seniorOpen && "rotate-90"
+                                      )}
+                                    />
+                                  ) : (
+                                    <span className="size-3.5 shrink-0" />
+                                  )}
+                                  <span
+                                    className="size-1.5 shrink-0 rounded-full opacity-60"
+                                    style={{ background: teamColor }}
+                                  />
+                                  <span className="font-medium">{senior.name}</span>
+                                  <span
+                                    className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
+                                    style={{
+                                      background: `color-mix(in srgb, ${teamColor} 14%, transparent)`,
+                                      color: teamColor,
+                                    }}
+                                  >
+                                    {LEVEL_LABEL.SENIOR_CELL}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              {metricCells(senior, teamColor)}
+                            </TableRow>
+
+                            {/* cells */}
+                            {seniorOpen &&
+                              cells.map((cell) => (
+                                <TableRow key={cell.id} className="border-border/60">
+                                  {!hideRank && <TableCell className="rounded-l-2xl" />}
+                                  <TableCell>
+                                    <div className="flex items-center gap-2.5" style={{ paddingLeft: "40px" }}>
+                                      <span className="size-3.5 shrink-0" />
+                                      <span
+                                        className="size-1.5 shrink-0 rounded-full opacity-60"
+                                        style={{ background: teamColor }}
+                                      />
+                                      <span className="font-medium">{cell.name}</span>
+                                      <span
+                                        className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
+                                        style={{
+                                          background: `color-mix(in srgb, ${teamColor} 14%, transparent)`,
+                                          color: teamColor,
+                                        }}
+                                      >
+                                        {LEVEL_LABEL.CELL}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  {metricCells(cell, teamColor)}
+                                </TableRow>
+                              ))}
+                          </FragmentRows>
+                        );
+                      })}
+                  </FragmentRows>
                 );
-              });
-            })}
-          </TableBody>
-        </Table>
+              })}
+              {blocks.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={colCount} className="text-muted-foreground py-8 text-center">
+                    No teams yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
   );
+}
+
+/** Groups sibling <tr>s without a wrapper element (tbody can't hold fragments' keys otherwise). */
+function FragmentRows({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

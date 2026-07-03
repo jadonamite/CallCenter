@@ -63,7 +63,7 @@ export default async function EventsPage() {
                       month: "short",
                       timeZone: "UTC",
                     })}{" "}
-                    · {e.campaignDays / 7} weeks
+                    · {Math.round(e.campaignDays / 7)} weeks
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

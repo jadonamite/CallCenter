@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { PageHeader } from "@/components/shell/page-header";
 import { ThemeSettings } from "@/components/settings/theme-settings";
+import { CallerManager } from "@/components/settings/caller-manager";
 import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
+import { callerRoster } from "@/lib/callers";
 import { saveAdminName } from "./actions";
 
 export const metadata = { title: "Settings · Outreach Call Center" };
@@ -49,6 +51,8 @@ export default async function SettingsPage() {
         </div>
         <ThemeSettings />
       </div>
+
+      <CallerManager callers={callerRoster()} />
 
       <div className="card-soft bg-card space-y-3 rounded-3xl p-5 sm:p-6">
         <h2 className="text-base font-bold">Data &amp; sync</h2>

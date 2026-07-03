@@ -40,3 +40,35 @@ export async function clearCaller() {
   store.delete("caller_name");
   revalidatePath("/", "layout");
 }
+
+export interface CreateCallerResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Admin: register a new caller (name + 4-digit PIN).
+ *
+ * STUB: the roster is static in `lib/callers.ts`, so a new caller won't persist
+ * yet — this validates and reports success. When the API lands, replace the
+ * marked block with a bearer-key POST to `${OUTREACH_API}/api/outreach/callers`
+ * (PIN hashed server-side via scrypt); then the roster comes from the API.
+ */
+export async function createCaller(name: string, pin: string): Promise<CreateCallerResult> {
+  if (name.trim().length < 2) return { ok: false, error: "Enter the caller's name." };
+  if (!/^\d{4}$/.test(pin)) return { ok: false, error: "PIN must be exactly 4 digits." };
+  if (CALLERS.some((c) => c.name.toLowerCase() === name.trim().toLowerCase())) {
+    return { ok: false, error: "A caller with that name already exists." };
+  }
+
+  // ── persistence (deferred to outreach API) ──────────────────────────────
+  // await fetch(`${process.env.OUTREACH_API}/api/outreach/callers`, {
+  //   method: "POST",
+  //   headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
+  //   body: JSON.stringify({ name: name.trim(), pin }),
+  // });
+  // ────────────────────────────────────────────────────────────────────────
+
+  revalidatePath("/settings");
+  return { ok: true };
+}
