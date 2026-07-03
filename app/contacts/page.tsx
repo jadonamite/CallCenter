@@ -6,6 +6,7 @@ import { ListFilters } from "@/components/filters/list-filters";
 import { Pagination } from "@/components/filters/pagination";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { ContactRowActions } from "@/components/contacts/contact-row-actions";
+import { ContactCard } from "@/components/contacts/contact-card";
 import { CallerBar } from "@/components/caller/caller-bar";
 import { getEvent } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
@@ -79,11 +80,41 @@ export default async function ContactsPage({
         </Link>
       </PageHeader>
 
-      <CallerBar callerName={callerName} roster={callerRoster()} />
+      <div className="bg-background/85 sticky top-0 z-20 -mx-4 space-y-3 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <CallerBar callerName={callerName} roster={callerRoster()} />
+        <ListFilters tabs={TABS} teams={teams} />
+      </div>
 
-      <ListFilters tabs={TABS} teams={teams} />
+      {/* mobile — call queue */}
+      <div className="space-y-2.5 md:hidden">
+        {pageRows.length === 0 && (
+          <p className="text-muted-foreground py-8 text-center text-sm">
+            No contacts match these filters.
+          </p>
+        )}
+        {pageRows.map((c) => (
+          <ContactCard
+            key={c.id}
+            contact={{ id: c.id, name: c.name, phone: c.phone, broughtBy: c.broughtBy }}
+            origin={originOf[c.groupId] ?? "—"}
+            color={colorOf[c.groupId]}
+            outcome={c.outcome}
+            lastContact={
+              c.contactedDay !== null
+                ? dateOfDay(c.contactedDay).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    timeZone: "UTC",
+                  })
+                : "Not yet"
+            }
+            eventName={eventName}
+          />
+        ))}
+      </div>
 
-      <div className="card-soft bg-card rounded-3xl p-5 sm:p-6">
+      {/* desktop — admin table */}
+      <div className="card-soft bg-card hidden rounded-3xl p-5 sm:p-6 md:block">
         <div className="scroll-x">
           <div className="min-w-[860px]">
             <Table className="sticky-first">

@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Phone, MessageCircle, MessageSquare, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  Phone,
+  MessageCircle,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  ChevronLeft,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,18 +22,12 @@ import {
   type CallOutcome,
   type Disposition,
 } from "@/lib/outreach";
-import {
-  DEFAULT_INVITE,
-  fillInvite,
-  telLink,
-  waLink,
-  smsLink,
-} from "@/lib/contact-links";
+import { DEFAULT_INVITE, fillInvite, telLink, waLink } from "@/lib/contact-links";
 import { logOutcome } from "@/app/contacts/actions";
 
-const OUTCOME_ORDER: CallOutcome[] = [
+/** Outcomes a *call* can end in (messaged is the WhatsApp path). */
+const CALL_STEP_OUTCOMES: CallOutcome[] = [
   "answered",
-  "messaged",
   "no_answer",
   "busy",
   "switched_off",
@@ -34,6 +35,10 @@ const OUTCOME_ORDER: CallOutcome[] = [
 ];
 
 const DISPOSITION_ORDER: Disposition[] = ["coming", "call_back_later", "not_coming"];
+
+type Step = "reach" | "outcome" | "response" | "saved";
+type Channel = "call" | "message";
+type LogResult = { ok: boolean; error?: string };
 
 function Chip({
   active,
@@ -56,7 +61,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
+      className={`rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
         active ? activeCls : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
       }`}
     >
@@ -76,53 +81,103 @@ export function LogCallDialog({
   contact: { id: string; name: string; phone: string };
   eventName: string;
 }) {
+  const [step, setStep] = useState<Step>("reach");
+  const [channel, setChannel] = useState<Channel>("call");
   const [outcome, setOutcome] = useState<CallOutcome | null>(null);
   const [disposition, setDisposition] = useState<Disposition | null>(null);
   const [callBackAt, setCallBackAt] = useState("");
   const [note, setNote] = useState("");
+  const [backFromApp, setBackFromApp] = useState(false);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<LogResult | null>(null);
+  const savingRef = useRef(false);
 
   const invite = fillInvite(DEFAULT_INVITE, contact.name, eventName);
-  const reached = outcome ? CALL_OUTCOMES[outcome].reached : false;
-  const ready =
-    !!outcome &&
-    (!reached || !!disposition) &&
-    (disposition !== "call_back_later" || !!callBackAt);
 
   function reset() {
+    setStep("reach");
+    setChannel("call");
     setOutcome(null);
     setDisposition(null);
     setCallBackAt("");
     setNote("");
+    setBackFromApp(false);
     setResult(null);
+    savingRef.current = false;
+  }
+
+  // When the caller returns from the dialer / WhatsApp, gently flag "what happened?".
+  useEffect(() => {
+    if (!open) return;
+    function onVisible() {
+      if (document.visibilityState === "visible" && (step === "outcome" || step === "response")) {
+        setBackFromApp(true);
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [open, step]);
+
+  function startCall() {
+    setChannel("call");
+    window.location.href = telLink(contact.phone); // opens the native dialer
+    setStep("outcome");
+  }
+
+  function startWhatsApp() {
+    setChannel("message");
+    setOutcome("messaged");
+    window.open(waLink(contact.phone, invite), "_blank", "noopener,noreferrer");
+    setStep("response");
   }
 
   function pickOutcome(o: CallOutcome) {
     setOutcome(o);
-    if (!CALL_OUTCOMES[o].reached) setDisposition(null);
+    if (o === "answered") {
+      setStep("response");
+    } else {
+      // no_answer / busy / switched_off / wrong_number — one tap, done.
+      save(o, undefined, undefined);
+    }
   }
 
-  function save() {
-    if (!ready || !outcome) return;
+  function save(o: CallOutcome, disp: Disposition | undefined, cb: string | undefined) {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setResult(null);
     startTransition(async () => {
       const res = await logOutcome({
         contactId: contact.id,
-        outcome,
-        disposition: reached ? disposition ?? undefined : undefined,
-        callBackAt: disposition === "call_back_later" ? callBackAt : undefined,
+        outcome: o,
+        disposition: disp,
+        callBackAt: disp === "call_back_later" ? cb : undefined,
         note: note.trim() || undefined,
       });
       setResult(res);
       if (res.ok) {
+        setStep("saved");
         setTimeout(() => {
           onOpenChange(false);
           reset();
-        }, 700);
+        }, 800);
+      } else {
+        savingRef.current = false;
       }
     });
   }
+
+  function saveResponse() {
+    if (!outcome) return;
+    if (disposition === "call_back_later" && !callBackAt) return;
+    save(outcome, disposition ?? undefined, callBackAt);
+  }
+
+  const back = () => {
+    setBackFromApp(false);
+    setResult(null);
+    savingRef.current = false;
+    setStep("reach");
+  };
 
   return (
     <Dialog
@@ -134,52 +189,85 @@ export function LogCallDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{contact.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {step !== "reach" && step !== "saved" && (
+              <button
+                type="button"
+                onClick={back}
+                aria-label="Back"
+                className="text-muted-foreground hover:text-foreground -ml-1"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+            )}
+            {contact.name}
+          </DialogTitle>
           <DialogDescription className="font-mono tabular-nums">
             {contact.phone}
           </DialogDescription>
         </DialogHeader>
 
-        {/* tap-to-call */}
-        <div className="grid grid-cols-3 gap-2">
-          <a
-            href={telLink(contact.phone)}
-            className="bg-primary text-primary-foreground flex flex-col items-center gap-1 rounded-2xl py-3 text-[11px] font-bold"
+        {/* STEP 1 — reach out */}
+        {step === "reach" && (
+          <div
+            key="reach"
+            className="animate-in fade-in-0 zoom-in-95 flex items-start justify-center gap-8 py-6"
           >
-            <Phone className="size-4" /> Call
-          </a>
-          <a
-            href={waLink(contact.phone, invite)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-1 rounded-2xl bg-[var(--team-2)] py-3 text-[11px] font-bold text-white"
-          >
-            <MessageCircle className="size-4" /> WhatsApp
-          </a>
-          <a
-            href={smsLink(contact.phone, invite)}
-            className="bg-secondary text-secondary-foreground flex flex-col items-center gap-1 rounded-2xl py-3 text-[11px] font-bold"
-          >
-            <MessageSquare className="size-4" /> SMS
-          </a>
-        </div>
-
-        {/* outcome */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold">What happened?</p>
-          <div className="flex flex-wrap gap-2">
-            {OUTCOME_ORDER.map((o) => (
-              <Chip key={o} active={outcome === o} onClick={() => pickOutcome(o)}>
-                {CALL_OUTCOMES[o].label}
-              </Chip>
-            ))}
+            <button
+              type="button"
+              onClick={startCall}
+              className="group flex flex-col items-center gap-2.5"
+            >
+              <span className="bg-primary text-primary-foreground flex size-24 items-center justify-center rounded-full shadow-lg transition-transform group-active:scale-95">
+                <Phone className="size-10" />
+              </span>
+              <span className="text-sm font-bold">Call</span>
+            </button>
+            <button
+              type="button"
+              onClick={startWhatsApp}
+              className="group flex flex-col items-center gap-2.5"
+            >
+              <span className="flex size-24 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform group-active:scale-95">
+                <MessageCircle className="size-10" />
+              </span>
+              <span className="text-sm font-bold">WhatsApp</span>
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* disposition — only when reached */}
-        {reached && (
-          <div className="space-y-2">
-            <p className="text-xs font-bold">Are they coming?</p>
+        {/* STEP 2 — what happened (call) */}
+        {step === "outcome" && (
+          <div key="outcome" className="animate-in fade-in-0 slide-in-from-right-3 space-y-3">
+            <p className="text-sm font-bold">
+              {backFromApp ? "How did the call go?" : "What happened?"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CALL_STEP_OUTCOMES.map((o) => (
+                <Chip
+                  key={o}
+                  active={outcome === o}
+                  onClick={() => pickOutcome(o)}
+                  tone={o === "wrong_number" ? "bad" : "default"}
+                >
+                  {CALL_OUTCOMES[o].label}
+                </Chip>
+              ))}
+            </div>
+            {pending && (
+              <p className="text-muted-foreground flex items-center gap-2 text-xs">
+                <Loader2 className="size-3.5 animate-spin" /> Saving…
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* STEP 3 — response (answered call OR whatsapp) */}
+        {step === "response" && (
+          <div key="response" className="animate-in fade-in-0 slide-in-from-right-3 space-y-3">
+            <p className="text-sm font-bold">
+              {channel === "message" ? "Any reply yet?" : "Are they coming?"}
+            </p>
             <div className="flex flex-wrap gap-2">
               {DISPOSITION_ORDER.map((d) => (
                 <Chip
@@ -191,7 +279,13 @@ export function LogCallDialog({
                   {DISPOSITIONS[d]}
                 </Chip>
               ))}
+              {channel === "message" && (
+                <Chip active={disposition === null} onClick={() => setDisposition(null)}>
+                  No reply yet
+                </Chip>
+              )}
             </div>
+
             {disposition === "call_back_later" && (
               <input
                 type="date"
@@ -200,42 +294,47 @@ export function LogCallDialog({
                 className="bg-secondary focus:ring-ring h-9 rounded-full px-4 text-sm font-medium outline-none focus:ring-2"
               />
             )}
+
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              placeholder="Note (optional)"
+              className="bg-secondary placeholder:text-muted-foreground/60 focus:ring-ring w-full resize-none rounded-2xl p-3 text-sm outline-none focus:ring-2"
+            />
+
+            <div className="flex items-center justify-between gap-3">
+              {result?.error ? (
+                <span className="text-destructive flex items-center gap-1.5 text-xs font-semibold">
+                  <XCircle className="size-4" /> {result.error}
+                </span>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                onClick={saveResponse}
+                disabled={pending || (disposition === "call_back_later" && !callBackAt)}
+                className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
+              >
+                {pending && <Loader2 className="size-3.5 animate-spin" />}
+                {pending ? "Saving…" : "Save log"}
+              </button>
+            </div>
           </div>
         )}
 
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          placeholder="Note (optional)"
-          className="bg-secondary placeholder:text-muted-foreground/60 focus:ring-ring w-full resize-none rounded-2xl p-3 text-sm outline-none focus:ring-2"
-        />
-
-        <div className="flex items-center justify-between gap-3">
-          {result?.ok ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--team-2)]">
-              <CheckCircle2 className="size-4" /> Logged
-            </span>
-          ) : result?.error ? (
-            <span className="text-destructive flex items-center gap-1.5 text-xs font-semibold">
-              <XCircle className="size-4" /> {result.error}
-            </span>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={save}
-            disabled={!ready || pending}
-            className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
+        {/* saved confirmation */}
+        {step === "saved" && (
+          <div
+            key="saved"
+            className="animate-in fade-in-0 zoom-in-95 flex flex-col items-center gap-2 py-6 text-[var(--team-2)]"
           >
-            {pending && <Loader2 className="size-3.5 animate-spin" />}
-            {pending ? "Saving…" : "Save log"}
-          </button>
-        </div>
+            <CheckCircle2 className="size-10" />
+            <span className="text-sm font-bold">Logged</span>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
-
-type LogResult = { ok: boolean; error?: string };
