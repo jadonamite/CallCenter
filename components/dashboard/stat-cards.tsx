@@ -57,7 +57,9 @@ export function StatCards({ stats }: { stats: Stat[] }) {
             key={s.label}
             className={cn(
               "card-soft rounded-3xl p-5",
-              s.hero ? "bg-primary text-primary-foreground" : "bg-card"
+              s.hero
+                ? "bg-primary text-primary-foreground col-span-2 lg:col-span-1"
+                : "bg-card"
             )}
           >
             <div className="flex items-start justify-between">

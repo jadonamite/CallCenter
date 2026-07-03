@@ -117,7 +117,8 @@ export function OutreachChart({ daily, pace, planWeeks }: Props) {
           </TabsList>
         </Tabs>
       </div>
-      <div className="mt-5">
+      <div className="scroll-x mt-5">
+        <div className="min-w-[560px]">
         {view === "pace" ? (
           <ChartContainer config={paceConfig} className="h-[290px] w-full">
             <LineChart data={pace} margin={{ left: 4, right: 12, top: 8 }}>
@@ -180,6 +181,7 @@ export function OutreachChart({ daily, pace, planWeeks }: Props) {
             </BarChart>
           </ChartContainer>
         )}
+        </div>
       </div>
     </div>
   );

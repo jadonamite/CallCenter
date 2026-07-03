@@ -1,0 +1,194 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { CheckCircle2, XCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { GroupNode } from "@/lib/types";
+
+interface ParsedRow {
+  name: string;
+  phone: string;
+  valid: boolean;
+  reason?: string;
+}
+
+/** accepts "Name, 080…", "Name - 080…", or "Name 080…" one per line */
+function parseLines(text: string): ParsedRow[] {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(.*?)[,\-–\s]+(\+?\d[\d\s]{7,15})$/);
+      if (!m) return { name: line, phone: "", valid: false, reason: "no phone found" };
+      const name = m[1].trim().replace(/[,\-–]+$/, "").trim();
+      const phone = m[2].replace(/\s/g, "").replace(/^\+234/, "0");
+      if (name.length < 2)
+        return { name, phone, valid: false, reason: "name missing" };
+      if (!/^0\d{10}$/.test(phone))
+        return { name, phone, valid: false, reason: "phone must be 11 digits" };
+      return { name, phone, valid: true };
+    });
+}
+
+export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
+  const [teamId, setTeamId] = useState<string>("");
+  const [seniorId, setSeniorId] = useState<string>("");
+  const [cellId, setCellId] = useState<string>("");
+  const [broughtBy, setBroughtBy] = useState("");
+  const [text, setText] = useState("");
+
+  const team = tree.find((t) => t._id === teamId);
+  const senior = team?.children.find((s) => s._id === seniorId);
+  const rows = useMemo(() => parseLines(text), [text]);
+  const valid = rows.filter((r) => r.valid);
+
+  // the group that gets credit: deepest level selected
+  const targetGroup = senior?.children.find((c) => c._id === cellId) ?? senior ?? team;
+  const ready =
+    valid.length > 0 &&
+    targetGroup &&
+    targetGroup.children.length === 0 &&
+    broughtBy.trim().length > 1;
+
+  return (
+    <div className="space-y-5">
+      <div className="card-soft bg-card space-y-4 rounded-3xl p-5 sm:p-6">
+        <div>
+          <h2 className="text-base font-bold">Where is this list from?</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Credit goes to the cell that brought the contacts
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <Select
+            value={teamId}
+            onValueChange={(v) => {
+              setTeamId(v);
+              setSeniorId("");
+              setCellId("");
+            }}
+          >
+            <SelectTrigger className="w-[160px] rounded-full">
+              <SelectValue placeholder="Team" />
+            </SelectTrigger>
+            <SelectContent>
+              {tree.map((t) => (
+                <SelectItem key={t._id} value={t._id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {team && team.children.length > 0 && (
+            <Select
+              value={seniorId}
+              onValueChange={(v) => {
+                setSeniorId(v);
+                setCellId("");
+              }}
+            >
+              <SelectTrigger className="w-[170px] rounded-full">
+                <SelectValue placeholder="Senior cell" />
+              </SelectTrigger>
+              <SelectContent>
+                {team.children.map((s) => (
+                  <SelectItem key={s._id} value={s._id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {senior && senior.children.length > 0 && (
+            <Select value={cellId} onValueChange={setCellId}>
+              <SelectTrigger className="w-[160px] rounded-full">
+                <SelectValue placeholder="Cell" />
+              </SelectTrigger>
+              <SelectContent>
+                {senior.children.map((c) => (
+                  <SelectItem key={c._id} value={c._id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <input
+            value={broughtBy}
+            onChange={(e) => setBroughtBy(e.target.value)}
+            placeholder="Brought by (rep's name)"
+            className="bg-secondary placeholder:text-muted-foreground focus:ring-ring h-9 w-full rounded-full px-4 text-sm font-medium outline-none focus:ring-2 sm:w-56"
+          />
+        </div>
+      </div>
+
+      <div className="card-soft bg-card space-y-4 rounded-3xl p-5 sm:p-6">
+        <div>
+          <h2 className="text-base font-bold">Paste the list</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            One person per line — “Name, 080XXXXXXXX”. Straight from WhatsApp
+            works.
+          </p>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={7}
+          placeholder={"Chinedu Okafor, 08031234567\nAmara Eze - 08087654321"}
+          className="bg-secondary placeholder:text-muted-foreground/60 focus:ring-ring w-full resize-y rounded-2xl p-4 font-mono text-sm outline-none focus:ring-2"
+        />
+
+        {rows.length > 0 && (
+          <ul className="max-h-56 space-y-1.5 overflow-y-auto">
+            {rows.map((r, i) => (
+              <li key={i} className="flex items-center gap-2.5 text-sm">
+                {r.valid ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-[var(--team-2)]" />
+                ) : (
+                  <XCircle className="text-destructive size-4 shrink-0" />
+                )}
+                <span className="font-medium">{r.name || "—"}</span>
+                <span className="text-muted-foreground font-mono text-xs">
+                  {r.phone || ""}
+                </span>
+                {!r.valid && (
+                  <span className="text-destructive ml-auto text-xs">{r.reason}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted-foreground text-xs font-medium">
+            {valid.length} valid · {rows.length - valid.length} need fixing
+            {targetGroup && targetGroup.children.length === 0 && (
+              <> → credited to <b>{targetGroup.name}</b></>
+            )}
+          </p>
+          <button
+            type="button"
+            disabled={!ready}
+            title="Saving lands with the outreach API (next phase)"
+            className="bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
+          >
+            Save {valid.length > 0 ? `${valid.length} contact${valid.length === 1 ? "" : "s"}` : "contacts"}
+          </button>
+        </div>
+        <p className="text-muted-foreground text-[11px]">
+          Entry preview — persistence arrives with the e-register outreach API.
+        </p>
+      </div>
+    </div>
+  );
+}

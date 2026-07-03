@@ -1,0 +1,26 @@
+import { ancestryMap, buildTree, getGroups } from "./groups";
+import { teamColorMap } from "./team-colors";
+import { generateContacts, groupRollup } from "./data";
+
+/** Shared server-side assembly used by every page. */
+export async function loadAppData() {
+  const groups = await getGroups();
+  const roots = buildTree(groups);
+  const contacts = generateContacts(roots);
+  const rollup = groupRollup(groups, roots, contacts);
+  const teamColorOf = teamColorMap(groups);
+
+  const ancestry = ancestryMap(groups);
+  const originOf: Record<string, string> = {};
+  const colorOf: Record<string, string> = {};
+  const teamOf: Record<string, string> = {};
+  for (const [id, chain] of ancestry) {
+    const team = chain[chain.length - 1];
+    originOf[id] =
+      chain.length > 1 ? `${chain[0].name} · ${team.name}` : chain[0].name;
+    colorOf[id] = teamColorOf[team._id];
+    teamOf[id] = team._id;
+  }
+
+  return { groups, roots, contacts, rollup, teamColorOf, originOf, colorOf, teamOf };
+}

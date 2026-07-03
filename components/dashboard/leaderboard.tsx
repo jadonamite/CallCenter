@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -19,9 +20,21 @@ interface Props {
   rows: GroupStats[];
   /** team id → css color; child rows inherit their team's hue */
   teamColorOf: Record<string, string>;
+  title?: string;
+  subtitle?: string;
+  viewAllHref?: string;
+  /** hide the rank column (single-team pages) */
+  hideRank?: boolean;
 }
 
-export function Leaderboard({ rows, teamColorOf }: Props) {
+export function Leaderboard({
+  rows,
+  teamColorOf,
+  title = "Team standings",
+  subtitle = "Contacts collated per team, rolled up through senior cells and cells — every number traces back to the group that brought it",
+  viewAllHref,
+  hideRank = false,
+}: Props) {
   const teams = rows.filter((r) => r.level === "TEAM");
   const ranked = [...teams].sort((a, b) => b.reached - a.reached);
   const rankOf = new Map(ranked.map((t, i) => [t.id, i + 1]));
@@ -35,17 +48,27 @@ export function Leaderboard({ rows, teamColorOf }: Props) {
   blocks.sort((a, b) => (rankOf.get(a[0].id) ?? 99) - (rankOf.get(b[0].id) ?? 99));
 
   return (
-    <div className="card-soft bg-card rounded-3xl p-6">
-      <h2 className="text-base font-bold">Team standings</h2>
-      <p className="text-muted-foreground mt-0.5 text-xs">
-        Contacts collated per team, rolled up through senior cells and cells —
-        every number traces back to the group that brought it
-      </p>
-      <div className="mt-4">
-        <Table>
+    <div className="card-soft bg-card rounded-3xl p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold">{title}</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">{subtitle}</p>
+        </div>
+        {viewAllHref && (
+          <Link
+            href={viewAllHref}
+            className="text-primary text-xs font-bold whitespace-nowrap hover:underline"
+          >
+            View all →
+          </Link>
+        )}
+      </div>
+      <div className="scroll-x mt-4">
+        <div className="min-w-[840px]">
+        <Table className="sticky-first">
           <TableHeader>
             <TableRow className="border-none">
-              <TableHead className="w-12">Rank</TableHead>
+              {!hideRank && <TableHead className="w-12">Rank</TableHead>}
               <TableHead>Group</TableHead>
               <TableHead className="text-right">Collated</TableHead>
               <TableHead className="text-right">Reached</TableHead>
@@ -70,9 +93,11 @@ export function Leaderboard({ rows, teamColorOf }: Props) {
                         : undefined
                     }
                   >
-                    <TableCell className="text-muted-foreground rounded-l-2xl font-bold tabular-nums">
-                      {isTeam ? `#${rankOf.get(r.id)}` : ""}
-                    </TableCell>
+                    {!hideRank && (
+                      <TableCell className="text-muted-foreground rounded-l-2xl font-bold tabular-nums">
+                        {isTeam ? `#${rankOf.get(r.id)}` : ""}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div
                         className="flex items-center gap-2.5"
@@ -85,9 +110,16 @@ export function Leaderboard({ rows, teamColorOf }: Props) {
                           )}
                           style={{ background: teamColor }}
                         />
-                        <span className={cn(isTeam ? "font-bold" : "font-medium")}>
-                          {r.name}
-                        </span>
+                        {isTeam ? (
+                          <Link
+                            href={`/teams/${r.id}`}
+                            className="font-bold hover:underline"
+                          >
+                            {r.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{r.name}</span>
+                        )}
                         <span
                           className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase"
                           style={{
@@ -130,6 +162,7 @@ export function Leaderboard({ rows, teamColorOf }: Props) {
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );

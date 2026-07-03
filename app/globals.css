@@ -152,6 +152,36 @@
   border-radius: 9999px;
 }
 
+/* horizontal overflow slider — charts & tables keep their desktop form on
+   mobile and slide inside the card; edge fade hints at more content */
+@utility scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 12px,
+    black calc(100% - 12px),
+    transparent 100%
+  );
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* sticky first column inside a scroll-x table so context never scrolls away */
+@utility sticky-first {
+  & th:first-child,
+  & td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--card);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

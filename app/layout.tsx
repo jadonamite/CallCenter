@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Sidebar } from "@/components/shell/sidebar";
+import { BottomNav } from "@/components/shell/bottom-nav";
+import { buildTree, getGroups } from "@/lib/groups";
+import { generateContacts, PLAN_DAYS, PLAN_TARGET, TODAY_INDEX } from "@/lib/data";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -18,11 +22,16 @@ export const metadata: Metadata = {
   description: "Follow-up and data collation dashboard",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const groups = await getGroups();
+  const contacts = generateContacts(buildTree(groups));
+  const reached = contacts.filter((c) => c.contactedDay !== null).length;
+  const daysLeft = Math.max(PLAN_DAYS - TODAY_INDEX - 1, 0);
+
   return (
     <html
       lang="en"
@@ -31,7 +40,9 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          {children}
+          <Sidebar reached={reached} target={PLAN_TARGET} daysLeft={daysLeft} />
+          <div className="flex-1 pb-24 md:pb-0 md:pl-16 lg:pl-60">{children}</div>
+          <BottomNav />
         </ThemeProvider>
       </body>
     </html>

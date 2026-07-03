@@ -237,6 +237,13 @@ export function groupRollup(
   return rows;
 }
 
+/** all follow-ups due within 3 days (or overdue), oldest first */
+export function dueFollowups(contacts: Contact[]): Contact[] {
+  return contacts
+    .filter((c) => c.followUpDay !== null && c.followUpDay <= TODAY_INDEX + 3)
+    .sort((a, b) => (a.followUpDay ?? 0) - (b.followUpDay ?? 0));
+}
+
 export interface OutcomeSlice {
   outcome: ContactOutcome;
   label: string;

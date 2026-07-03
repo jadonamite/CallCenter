@@ -43,7 +43,7 @@ export function TeamDonut({ teams, outcomes }: Props) {
         Every contact credited to the team that brought it
       </p>
 
-      <div className="mt-2 flex items-center gap-5">
+      <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
         <div className="relative shrink-0">
           <ChartContainer config={config} className="aspect-square h-[172px]">
             <PieChart>
@@ -70,18 +70,20 @@ export function TeamDonut({ teams, outcomes }: Props) {
             </span>
           </div>
         </div>
-        <ul className="w-full space-y-2.5">
+        <ul className="w-full min-w-0 space-y-2.5">
           {data.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 text-sm">
+            <li key={t.id} className="flex min-w-0 items-center gap-2 text-sm">
               <span
                 className="size-2.5 shrink-0 rounded-full"
                 style={{ background: t.color }}
               />
-              <span className="text-muted-foreground font-medium">{t.name}</span>
-              <span className="ml-auto font-bold tabular-nums">
+              <span className="text-muted-foreground truncate font-medium">
+                {t.name}
+              </span>
+              <span className="ml-auto shrink-0 font-bold tabular-nums">
                 {t.total.toLocaleString()}
               </span>
-              <span className="text-muted-foreground w-9 text-right text-xs tabular-nums">
+              <span className="text-muted-foreground w-9 shrink-0 text-right text-xs tabular-nums">
                 {total ? Math.round((t.total / total) * 100) : 0}%
               </span>
             </li>

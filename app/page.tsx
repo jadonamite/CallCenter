@@ -8,6 +8,7 @@ import { ancestryMap, buildTree, getGroups } from "@/lib/groups";
 import { teamColorMap } from "@/lib/team-colors";
 import {
   dailySeries,
+  dueFollowups,
   generateContacts,
   groupRollup,
   outcomeBreakdown,
@@ -105,8 +106,10 @@ export default async function DashboardPage() {
     .sort((a, b) => b.total - a.total)
     .map((t) => ({ id: t.id, name: t.name, total: t.total, color: teamColorOf[t.id] }));
 
+  const due = dueFollowups(contacts);
+
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 px-6 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
       <DashboardHeader
         week={week}
         totalWeeks={PLAN_WEEKS}
@@ -124,9 +127,15 @@ export default async function DashboardPage() {
         <TeamDonut teams={teamSlices} outcomes={outcomes} />
       </div>
 
-      <Leaderboard rows={rollup} teamColorOf={teamColorOf} />
+      <Leaderboard rows={rollup} teamColorOf={teamColorOf} viewAllHref="/teams" />
 
-      <FollowupTable contacts={contacts} originOf={originOf} colorOf={colorOf} />
+      <FollowupTable
+        rows={due.slice(0, 10)}
+        originOf={originOf}
+        colorOf={colorOf}
+        subtitle={`${due.length} due or overdue — showing the 10 oldest`}
+        viewAllHref="/follow-ups"
+      />
     </div>
   );
 }
