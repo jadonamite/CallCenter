@@ -1,11 +1,4 @@
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -22,6 +15,8 @@ interface Props {
   contacts: Contact[];
   /** group id → "Cell · Team" origin label */
   originOf: Record<string, string>;
+  /** group id → its team's css color */
+  colorOf: Record<string, string>;
 }
 
 const OUTCOME_BADGE: Record<
@@ -42,69 +37,76 @@ function fmt(day: number) {
   });
 }
 
-export function FollowupTable({ contacts, originOf }: Props) {
+export function FollowupTable({ contacts, originOf, colorOf }: Props) {
   const due = contacts
     .filter((c) => c.followUpDay !== null && c.followUpDay <= TODAY_INDEX + 3)
     .sort((a, b) => (a.followUpDay ?? 0) - (b.followUpDay ?? 0))
     .slice(0, 40);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Follow-up queue</CardTitle>
-        <CardDescription>
-          Due or overdue follow-ups, oldest first — {due.length} shown
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[380px]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>Brought by</TableHead>
-                <TableHead>Last contact</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Due</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {due.map((c) => {
-                const badge = OUTCOME_BADGE[c.outcome];
-                const overdue = (c.followUpDay ?? 0) < TODAY_INDEX;
-                return (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {c.phone}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+    <div className="card-soft bg-card rounded-3xl p-6">
+      <h2 className="text-base font-bold">Follow-up queue</h2>
+      <p className="text-muted-foreground mt-0.5 text-xs">
+        Due or overdue follow-ups, oldest first — {due.length} shown
+      </p>
+      <ScrollArea className="mt-4 h-[380px]">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-none">
+              <TableHead>Name</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>From</TableHead>
+              <TableHead>Brought by</TableHead>
+              <TableHead>Last contact</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Due</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {due.map((c) => {
+              const badge = OUTCOME_BADGE[c.outcome];
+              const overdue = (c.followUpDay ?? 0) < TODAY_INDEX;
+              const color = colorOf[c.groupId];
+              return (
+                <TableRow key={c.id} className="border-border/60">
+                  <TableCell className="font-semibold">{c.name}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs tabular-nums">
+                    {c.phone}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className="rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap"
+                      style={{
+                        background: `color-mix(in srgb, ${color} 13%, transparent)`,
+                        color,
+                      }}
+                    >
                       {originOf[c.groupId] ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.broughtBy}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {c.contactedDay !== null ? fmt(c.contactedDay) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={badge.variant}>{badge.label}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <span className={overdue ? "text-destructive font-medium" : ""}>
-                        {c.followUpDay !== null ? fmt(c.followUpDay) : "—"}
-                        {overdue && " · overdue"}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.broughtBy}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {c.contactedDay !== null ? fmt(c.contactedDay) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="rounded-full" variant={badge.variant}>
+                      {badge.label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <span className={overdue ? "text-destructive font-semibold" : ""}>
+                      {c.followUpDay !== null ? fmt(c.followUpDay) : "—"}
+                      {overdue && " · overdue"}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+    </div>
   );
 }
