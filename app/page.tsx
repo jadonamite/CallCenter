@@ -14,6 +14,7 @@ import {
   paceSeries,
   PLAN_DAYS,
   PLAN_TARGET,
+  PLAN_WEEKS,
   TODAY_INDEX,
 } from "@/lib/data";
 
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
     (c) => c.followUpDay !== null && c.followUpDay <= TODAY_INDEX
   );
 
-  const week = Math.min(Math.floor(TODAY_INDEX / 7) + 1, 7);
+  const week = Math.min(Math.floor(TODAY_INDEX / 7) + 1, PLAN_WEEKS);
   const targetToDate = Math.round(((TODAY_INDEX + 1) / PLAN_DAYS) * PLAN_TARGET);
   const paceDelta = reached.length - targetToDate;
 
@@ -108,6 +109,7 @@ export default async function DashboardPage() {
     <div className="mx-auto w-full max-w-7xl space-y-5 px-6 py-8">
       <DashboardHeader
         week={week}
+        totalWeeks={PLAN_WEEKS}
         contacts={contacts.length}
         teams={roots.length}
         target={PLAN_TARGET}
@@ -117,7 +119,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <OutreachChart daily={daily} pace={pace} planWeeks={7} />
+          <OutreachChart daily={daily} pace={pace} planWeeks={PLAN_WEEKS} />
         </div>
         <TeamDonut teams={teamSlices} outcomes={outcomes} />
       </div>

@@ -1,10 +1,11 @@
 import { ApiGroup, Contact, ContactOutcome, GroupNode } from "./types";
 import { ancestryMap, leafNodes } from "./groups";
 
-/** 7-week outreach plan */
-export const PLAN_START = new Date("2026-06-01T00:00:00Z"); // Monday, week 1
-export const PLAN_DAYS = 49;
-export const PLAN_TARGET = 560; // people to reach by end of plan
+/** 2-week outreach sprint ahead of the event */
+export const PLAN_START = new Date("2026-06-29T00:00:00Z"); // Monday, week 1
+export const PLAN_DAYS = 14;
+export const PLAN_WEEKS = PLAN_DAYS / 7;
+export const PLAN_TARGET = 560; // people to reach by event day
 export const TODAY_INDEX = dayIndexOf(new Date("2026-07-03T00:00:00Z"));
 
 export function dayIndexOf(date: Date): number {

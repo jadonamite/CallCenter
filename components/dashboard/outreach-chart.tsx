@@ -100,7 +100,9 @@ export function OutreachChart({ daily, pace, planWeeks }: Props) {
     <div className="card-soft bg-card rounded-3xl p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold">Outreach over the 7-week plan</h2>
+          <h2 className="text-base font-bold">
+            Outreach over the {planWeeks}-week plan
+          </h2>
           <p className="text-muted-foreground mt-0.5 text-xs">
             {view === "pace"
               ? "Cumulative people reached vs. the plan target"
@@ -146,14 +148,14 @@ export function OutreachChart({ daily, pace, planWeeks }: Props) {
             <BarChart
               data={barData}
               margin={{ left: 4, right: 12, top: 30 }}
-              barSize={view === "daily" ? 9 : 26}
+              barSize={view === "daily" ? (barData.length > 21 ? 9 : 18) : 26}
             >
               <CartesianGrid vertical={false} strokeOpacity={0.3} />
               <XAxis
                 dataKey="label"
                 tickLine={false}
                 axisLine={false}
-                interval={view === "daily" ? 3 : 0}
+                interval={view === "daily" && barData.length > 21 ? 3 : 0}
                 tickMargin={8}
               />
               <YAxis tickLine={false} axisLine={false} width={32} />
