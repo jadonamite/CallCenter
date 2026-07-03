@@ -1,0 +1,33 @@
+"use client";
+
+import { useState } from "react";
+import { PhoneCall } from "lucide-react";
+import { LogCallDialog } from "./log-call-dialog";
+
+/** Per-row "Log call" trigger + dialog. Lives client-side so the table stays a server component. */
+export function ContactRowActions({
+  contact,
+  eventName,
+}: {
+  contact: { id: string; name: string; phone: string };
+  eventName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="bg-secondary text-secondary-foreground hover:bg-secondary/70 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+      >
+        <PhoneCall className="size-3.5" /> Log
+      </button>
+      <LogCallDialog
+        open={open}
+        onOpenChange={setOpen}
+        contact={contact}
+        eventName={eventName}
+      />
+    </>
+  );
+}

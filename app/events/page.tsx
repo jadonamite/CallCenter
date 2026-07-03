@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { EVENTS, fmtEventDay, LIVE_EVENT_ID } from "@/lib/events";
 import { loadAppData } from "@/lib/page-data";
 import { setActiveEvent } from "./actions";
+import { EventFormDialog } from "@/components/events/event-form-dialog";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Events · Outreach Call Center" };
@@ -26,7 +27,9 @@ export default async function EventsPage() {
       <PageHeader
         title="Events"
         subtitle="Each event runs its own outreach campaign — the dashboard follows the active one"
-      />
+      >
+        <EventFormDialog mode="add" />
+      </PageHeader>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {EVENTS.map((e) => {
@@ -72,6 +75,7 @@ export default async function EventsPage() {
                       active
                     </Badge>
                   )}
+                  <EventFormDialog mode="edit" event={e} />
                 </div>
               </div>
 
@@ -154,8 +158,8 @@ export default async function EventsPage() {
       </div>
 
       <p className="text-muted-foreground text-xs">
-        Creating and editing events lands with the e-register outreach API —
-        events will then be records, not config.
+        Create and edit are wired — persistence lands with the e-register
+        outreach API, when events become records instead of config.
       </p>
     </div>
   );

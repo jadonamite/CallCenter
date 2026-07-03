@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GroupNode } from "@/lib/types";
+import { saveContacts, type SaveContactsResult } from "@/app/contacts/new/actions";
 
 interface ParsedRow {
   name: string;
@@ -43,6 +44,8 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
   const [cellId, setCellId] = useState<string>("");
   const [broughtBy, setBroughtBy] = useState("");
   const [text, setText] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<SaveContactsResult | null>(null);
 
   const team = tree.find((t) => t._id === teamId);
   const senior = team?.children.find((s) => s._id === seniorId);
@@ -53,9 +56,23 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
   const targetGroup = senior?.children.find((c) => c._id === cellId) ?? senior ?? team;
   const ready =
     valid.length > 0 &&
-    targetGroup &&
+    !!targetGroup &&
     targetGroup.children.length === 0 &&
     broughtBy.trim().length > 1;
+
+  function handleSave() {
+    if (!ready || !targetGroup) return;
+    setResult(null);
+    startTransition(async () => {
+      const res = await saveContacts({
+        groupId: targetGroup._id,
+        broughtBy: broughtBy.trim(),
+        contacts: valid.map((r) => ({ name: r.name, phone: r.phone })),
+      });
+      setResult(res);
+      if (res.ok) setText("");
+    });
+  }
 
   return (
     <div className="space-y-5">
@@ -178,16 +195,33 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
           </p>
           <button
             type="button"
-            disabled={!ready}
-            title="Saving lands with the outreach API (next phase)"
-            className="bg-primary text-primary-foreground rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
+            onClick={handleSave}
+            disabled={!ready || pending}
+            className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
           >
-            Save {valid.length > 0 ? `${valid.length} contact${valid.length === 1 ? "" : "s"}` : "contacts"}
+            {pending && <Loader2 className="size-3.5 animate-spin" />}
+            {pending
+              ? "Saving…"
+              : `Save ${valid.length > 0 ? `${valid.length} contact${valid.length === 1 ? "" : "s"}` : "contacts"}`}
           </button>
         </div>
-        <p className="text-muted-foreground text-[11px]">
-          Entry preview — persistence arrives with the e-register outreach API.
-        </p>
+
+        {result?.ok ? (
+          <p className="flex items-center gap-2 text-[11px] font-semibold text-[var(--team-2)]">
+            <CheckCircle2 className="size-4 shrink-0" />
+            Saved {result.saved} contact{result.saved === 1 ? "" : "s"}
+            {result.skipped > 0 && <> · {result.skipped} skipped (duplicate/invalid)</>}
+          </p>
+        ) : result?.error ? (
+          <p className="text-destructive flex items-center gap-2 text-[11px] font-semibold">
+            <XCircle className="size-4 shrink-0" />
+            {result.error}
+          </p>
+        ) : (
+          <p className="text-muted-foreground text-[11px]">
+            Persistence lands with the e-register outreach API — the flow is wired.
+          </p>
+        )}
       </div>
     </div>
   );

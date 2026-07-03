@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { ListFilters } from "@/components/filters/list-filters";
 import { Pagination } from "@/components/filters/pagination";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { ContactRowActions } from "@/components/contacts/contact-row-actions";
+import { CallerBar } from "@/components/caller/caller-bar";
+import { getEvent } from "@/lib/events";
+import { callerRoster } from "@/lib/callers";
 import {
   Table,
   TableBody,
@@ -33,6 +38,10 @@ export default async function ContactsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
+  const store = await cookies();
+  const activeEvent = store.get("active_event")?.value;
+  const eventName = getEvent(activeEvent).name;
+  const callerName = store.get("caller_name")?.value ?? null;
   const { contacts, rollup, originOf, colorOf, teamOf } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
@@ -70,11 +79,13 @@ export default async function ContactsPage({
         </Link>
       </PageHeader>
 
+      <CallerBar callerName={callerName} roster={callerRoster()} />
+
       <ListFilters tabs={TABS} teams={teams} />
 
       <div className="card-soft bg-card rounded-3xl p-5 sm:p-6">
         <div className="scroll-x">
-          <div className="min-w-[760px]">
+          <div className="min-w-[860px]">
             <Table className="sticky-first">
               <TableHeader>
                 <TableRow className="border-none">
@@ -83,13 +94,14 @@ export default async function ContactsPage({
                   <TableHead>From</TableHead>
                   <TableHead>Brought by</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Last contact</TableHead>
+                  <TableHead>Last contact</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageRows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                    <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
                       No contacts match these filters.
                     </TableCell>
                   </TableRow>
@@ -119,7 +131,7 @@ export default async function ContactsPage({
                       <TableCell>
                         <StatusBadge outcome={c.outcome} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-right tabular-nums">
+                      <TableCell className="text-muted-foreground tabular-nums">
                         {c.contactedDay !== null
                           ? dateOfDay(c.contactedDay).toLocaleDateString("en-GB", {
                               day: "numeric",
@@ -127,6 +139,12 @@ export default async function ContactsPage({
                               timeZone: "UTC",
                             })
                           : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ContactRowActions
+                          contact={{ id: c.id, name: c.name, phone: c.phone }}
+                          eventName={eventName}
+                        />
                       </TableCell>
                     </TableRow>
                   );
