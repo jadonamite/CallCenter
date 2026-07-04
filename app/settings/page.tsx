@@ -4,7 +4,8 @@ import { ThemeSettings } from "@/components/settings/theme-settings";
 import { CallerManager } from "@/components/settings/caller-manager";
 import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
-import { saveAdminName } from "./actions";
+import { DEFAULT_INVITE } from "@/lib/contact-links";
+import { saveAdminName, saveInviteTemplate } from "./actions";
 
 export const metadata = { title: "Settings · Outreach Call Center" };
 
@@ -13,6 +14,7 @@ export default async function SettingsPage() {
   const adminName = store.get("admin_name")?.value ?? "Admin";
   const activeId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
   const activeEvent = EVENTS.find((e) => e.id === activeId) ?? EVENTS[0];
+  const inviteTemplate = store.get("invite_template")?.value ?? DEFAULT_INVITE;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -38,6 +40,33 @@ export default async function SettingsPage() {
             className="bg-primary text-primary-foreground rounded-full px-5 text-xs font-bold"
           >
             Save
+          </button>
+        </form>
+      </div>
+
+      <div className="card-soft bg-card space-y-4 rounded-3xl p-5 sm:p-6">
+        <div>
+          <h2 className="text-base font-bold">Invite message</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Sent via WhatsApp from the call dialog and seeded into the SMS composer.
+            Tokens fill in per person:{" "}
+            <code className="bg-secondary rounded px-1 py-0.5">{"{name}"}</code>{" "}
+            <code className="bg-secondary rounded px-1 py-0.5">{"{event}"}</code>
+          </p>
+        </div>
+        <form action={saveInviteTemplate} className="space-y-3">
+          <textarea
+            name="template"
+            defaultValue={inviteTemplate}
+            rows={4}
+            maxLength={500}
+            className="bg-secondary placeholder:text-muted-foreground focus:ring-ring w-full resize-y rounded-2xl p-4 text-sm outline-none focus:ring-2"
+          />
+          <button
+            type="submit"
+            className="bg-primary text-primary-foreground rounded-full px-5 py-2 text-xs font-bold"
+          >
+            Save invite
           </button>
         </form>
       </div>

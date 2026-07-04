@@ -43,6 +43,7 @@ export default async function ContactsPage({
   const activeEvent = store.get("active_event")?.value;
   const eventName = getEvent(activeEvent).name;
   const callerName = store.get("caller_name")?.value ?? null;
+  const inviteTemplate = store.get("invite_template")?.value || undefined;
   const { contacts, rollup, originOf, colorOf, teamOf } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
@@ -109,6 +110,7 @@ export default async function ContactsPage({
                 : "Not yet"
             }
             eventName={eventName}
+            inviteTemplate={inviteTemplate}
           />
         ))}
       </div>
@@ -175,6 +177,7 @@ export default async function ContactsPage({
                         <ContactRowActions
                           contact={{ id: c.id, name: c.name, phone: c.phone }}
                           eventName={eventName}
+                          inviteTemplate={inviteTemplate}
                         />
                       </TableCell>
                     </TableRow>

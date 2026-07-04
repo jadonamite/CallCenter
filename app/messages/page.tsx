@@ -7,8 +7,10 @@ import { getEvent } from "@/lib/events";
 export const metadata = { title: "Send SMS · Outreach Call Center" };
 
 export default async function MessagesPage() {
-  const activeEvent = (await cookies()).get("active_event")?.value;
+  const store = await cookies();
+  const activeEvent = store.get("active_event")?.value;
   const eventName = getEvent(activeEvent).name;
+  const initialTemplate = store.get("invite_template")?.value || undefined;
   const { contacts, rollup, groups, teamOf } = await loadAppData();
   const nameById = new Map(groups.map((g) => [g._id, g.name]));
 
@@ -31,7 +33,12 @@ export default async function MessagesPage() {
         title="Send SMS"
         subtitle="Personalized invites to a chosen audience — one message per person, valid numbers only"
       />
-      <BroadcastComposer recipients={recipients} teams={teams} eventName={eventName} />
+      <BroadcastComposer
+        recipients={recipients}
+        teams={teams}
+        eventName={eventName}
+        initialTemplate={initialTemplate}
+      />
     </div>
   );
 }

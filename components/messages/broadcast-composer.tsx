@@ -44,15 +44,18 @@ export function BroadcastComposer({
   recipients,
   teams,
   eventName,
+  initialTemplate,
 }: {
   recipients: Recipient[];
   teams: { id: string; name: string }[];
   eventName: string;
+  /** invite template from Settings; falls back to the built-in SMS default */
+  initialTemplate?: string;
 }) {
   const [teamFilter, setTeamFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
-  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+  const [template, setTemplate] = useState(initialTemplate || DEFAULT_TEMPLATE);
   const [provider, setProvider] = useState<SmsProviderId>("termii");
   const [route, setRoute] = useState<SmsRoute>("dnd");
   const [pending, startTransition] = useTransition();

@@ -8,9 +8,11 @@ import { LogCallDialog } from "./log-call-dialog";
 export function ContactRowActions({
   contact,
   eventName,
+  inviteTemplate,
 }: {
   contact: { id: string; name: string; phone: string };
   eventName: string;
+  inviteTemplate?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -27,6 +29,7 @@ export function ContactRowActions({
         onOpenChange={setOpen}
         contact={contact}
         eventName={eventName}
+        inviteTemplate={inviteTemplate}
       />
     </>
   );

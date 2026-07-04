@@ -1,14 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import {
-  Phone,
-  MessageCircle,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  ChevronLeft,
-} from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ChevronLeft } from "lucide-react";
+import { WhatsappIcon, PhoneSolidIcon } from "@/components/icons/brand";
 import {
   Dialog,
   DialogContent,
@@ -75,11 +69,14 @@ export function LogCallDialog({
   onOpenChange,
   contact,
   eventName,
+  inviteTemplate = DEFAULT_INVITE,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   contact: { id: string; name: string; phone: string };
   eventName: string;
+  /** editable in Settings; falls back to the built-in invite */
+  inviteTemplate?: string;
 }) {
   const [step, setStep] = useState<Step>("reach");
   const [channel, setChannel] = useState<Channel>("call");
@@ -92,7 +89,7 @@ export function LogCallDialog({
   const [result, setResult] = useState<LogResult | null>(null);
   const savingRef = useRef(false);
 
-  const invite = fillInvite(DEFAULT_INVITE, contact.name, eventName);
+  const invite = fillInvite(inviteTemplate, contact.name, eventName);
 
   function reset() {
     setStep("reach");
@@ -219,7 +216,7 @@ export function LogCallDialog({
               className="group flex flex-col items-center gap-2.5"
             >
               <span className="bg-primary text-primary-foreground flex size-24 items-center justify-center rounded-full shadow-lg transition-transform group-active:scale-95">
-                <Phone className="size-10" />
+                <PhoneSolidIcon className="size-10" />
               </span>
               <span className="text-sm font-bold">Call</span>
             </button>
@@ -229,7 +226,7 @@ export function LogCallDialog({
               className="group flex flex-col items-center gap-2.5"
             >
               <span className="flex size-24 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform group-active:scale-95">
-                <MessageCircle className="size-10" />
+                <WhatsappIcon className="size-11" />
               </span>
               <span className="text-sm font-bold">WhatsApp</span>
             </button>

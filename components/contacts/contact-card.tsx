@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Phone } from "lucide-react";
+import { PhoneSolidIcon } from "@/components/icons/brand";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { LogCallDialog } from "./log-call-dialog";
 import type { Contact } from "@/lib/types";
@@ -17,6 +17,7 @@ export function ContactCard({
   outcome,
   lastContact,
   eventName,
+  inviteTemplate,
 }: {
   contact: { id: string; name: string; phone: string; broughtBy: string };
   origin: string;
@@ -24,6 +25,7 @@ export function ContactCard({
   outcome: Contact["outcome"];
   lastContact: string;
   eventName: string;
+  inviteTemplate?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -55,7 +57,7 @@ export function ContactCard({
           </div>
         </div>
         <span className="bg-primary text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full">
-          <Phone className="size-5" />
+          <PhoneSolidIcon className="size-5" />
         </span>
       </button>
 
@@ -64,6 +66,7 @@ export function ContactCard({
         onOpenChange={setOpen}
         contact={{ id: contact.id, name: contact.name, phone: contact.phone }}
         eventName={eventName}
+        inviteTemplate={inviteTemplate}
       />
     </>
   );
