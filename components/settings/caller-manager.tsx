@@ -9,11 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createCaller, deleteCaller } from "@/app/caller/actions";
+import { createCaller, deleteCaller, assignCaller } from "@/app/caller/actions";
 
 interface RosterCaller {
   id: string;
   name: string;
+  seniorCellId?: string | null;
   seniorCellName?: string | null;
 }
 interface SeniorCellOption {
@@ -41,6 +42,7 @@ export function CallerManager({
   const [seniorId, setSeniorId] = useState<string>(ALL_ACCESS);
   const [pending, startTransition] = useTransition();
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   function submit() {
@@ -61,6 +63,32 @@ export function CallerManager({
         setSeniorId(ALL_ACCESS);
       } else {
         setMsg({ ok: false, text: res.error ?? "Could not register." });
+      }
+    });
+  }
+
+  function reassign(id: string, callerName: string, nextSeniorId: string) {
+    setMsg(null);
+    setAssigningId(id);
+    const senior =
+      nextSeniorId === ALL_ACCESS
+        ? null
+        : (() => {
+            const s = seniorCells.find((c) => c.id === nextSeniorId);
+            return s ? { id: s.id, name: s.name } : null;
+          })();
+    startTransition(async () => {
+      const res = await assignCaller(id, senior);
+      setAssigningId(null);
+      if (res.ok) {
+        setMsg({
+          ok: true,
+          text: senior
+            ? `${callerName} now scoped to ${senior.name}.`
+            : `${callerName} set to all cells.`,
+        });
+      } else {
+        setMsg({ ok: false, text: res.error ?? "Could not update assignment." });
       }
     });
   }
@@ -87,32 +115,44 @@ export function CallerManager({
       </div>
 
       {callers.length > 0 && (
-        <ul className="flex flex-wrap gap-2">
+        <ul className="divide-border/60 divide-y">
           {callers.map((c) => (
-            <li
-              key={c.id}
-              className="bg-secondary text-secondary-foreground flex items-center gap-1.5 rounded-full py-1.5 pr-1.5 pl-3 text-xs font-semibold"
-            >
-              {c.name}
-              {c.seniorCellName ? (
-                <span className="text-primary/90 inline-flex items-center gap-0.5">
-                  <Icon name="teams" className="size-3" />
-                  {c.seniorCellName}
-                </span>
-              ) : (
-                <span className="text-muted-foreground/70">· all cells</span>
-              )}
+            <li key={c.id} className="flex flex-wrap items-center gap-2.5 py-2.5">
+              <span className="min-w-0 flex-1 text-sm font-semibold">{c.name}</span>
+              <Select
+                value={c.seniorCellId ?? ALL_ACCESS}
+                onValueChange={(v) => reassign(c.id, c.name, v)}
+                disabled={pending}
+              >
+                <SelectTrigger className="h-9 w-[200px] rounded-full text-xs">
+                  {assigningId === c.id ? (
+                    <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                      <Spinner className="size-3.5 animate-spin" /> Saving…
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="All cells (no scope)" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_ACCESS}>All cells (no scope)</SelectItem>
+                  {seniorCells.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} · {s.team}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <button
                 type="button"
                 onClick={() => remove(c.id, c.name)}
                 disabled={pending}
                 aria-label={`Remove ${c.name}`}
-                className="text-muted-foreground hover:bg-destructive hover:text-white flex size-5 items-center justify-center rounded-full transition-colors disabled:opacity-40"
+                className="text-muted-foreground hover:bg-destructive hover:text-white flex size-7 items-center justify-center rounded-full transition-colors disabled:opacity-40"
               >
                 {removingId === c.id ? (
-                  <Spinner className="size-3" />
+                  <Spinner className="size-3.5" />
                 ) : (
-                  <Icon name="close" className="size-3" />
+                  <Icon name="close" className="size-3.5" />
                 )}
               </button>
             </li>

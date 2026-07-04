@@ -125,6 +125,33 @@ export async function createCaller(
 }
 
 /**
+ * Admin: (re)assign a caller's senior cell — pass `null` to clear it back to
+ * all-access. Persists via the API when wired (real ObjectId); a no-op against
+ * the static stub otherwise.
+ */
+export async function assignCaller(
+  id: string,
+  seniorCell: { id: string; name: string } | null
+): Promise<CreateCallerResult> {
+  if (outreachWired() && isObjectId(id)) {
+    try {
+      await outreachFetch("/api/outreach/callers", {
+        method: "PATCH",
+        body: {
+          id,
+          seniorCellId: seniorCell?.id ?? null,
+          seniorCellName: seniorCell?.name ?? null,
+        },
+      });
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+/**
  * Admin: remove a caller. Persists via the API when wired (real ObjectId);
  * a no-op against the static stub otherwise.
  */
