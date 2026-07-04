@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Icon, Spinner } from "@/components/icons";
 import {
   Select,
@@ -58,6 +58,14 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
   const rows = useMemo(() => parseLines(text), [text]);
   const valid = rows.filter((r) => r.valid);
 
+  // Auto-select the only cell when a senior cell has exactly one — no dead-end
+  // where the user must pick from a list of one to enable Save.
+  useEffect(() => {
+    if (senior && senior.children.length === 1 && !cellId) {
+      setCellId(senior.children[0]._id);
+    }
+  }, [senior, cellId]);
+
   // the group that gets credit: deepest level selected
   const targetGroup = senior?.children.find((c) => c._id === cellId) ?? senior ?? team;
   const ready =
@@ -65,6 +73,15 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
     !!targetGroup &&
     targetGroup.children.length === 0 &&
     broughtBy.trim().length > 1;
+
+  // When the deepest picked group still nests deeper, Save stays disabled — tell
+  // the user which level is missing instead of leaving them stuck.
+  const needsPick =
+    targetGroup && targetGroup.children.length > 0
+      ? targetGroup === team
+        ? "Pick a senior cell"
+        : "Pick a cell"
+      : null;
 
   function handleSave() {
     if (!ready || !targetGroup) return;
@@ -207,6 +224,13 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
             {valid.length} valid · {rows.length - valid.length} need fixing
             {targetGroup && targetGroup.children.length === 0 && (
               <> → credited to <b>{targetGroup.name}</b></>
+            )}
+            {needsPick && (
+              <span className="text-primary inline-flex items-center gap-1 font-semibold">
+                {" "}
+                <Icon name="teams" className="size-3.5 shrink-0" />
+                {needsPick} to continue
+              </span>
             )}
           </p>
           <button
