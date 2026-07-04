@@ -5,13 +5,14 @@ import { CallerManager } from "@/components/settings/caller-manager";
 import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
 import { DEFAULT_INVITE } from "@/lib/contact-links";
-import { saveAdminName, saveInviteTemplate } from "./actions";
+import { saveAdminName, saveInviteTemplate, clearAdminName } from "./actions";
 
 export const metadata = { title: "Settings · Outreach Call Center" };
 
 export default async function SettingsPage() {
   const store = await cookies();
   const adminName = store.get("admin_name")?.value ?? "Admin";
+  const hasCustomAdmin = Boolean(store.get("admin_name")?.value);
   const activeId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
   const activeEvent = EVENTS.find((e) => e.id === activeId) ?? EVENTS[0];
   const inviteTemplate = store.get("invite_template")?.value ?? DEFAULT_INVITE;
@@ -41,6 +42,15 @@ export default async function SettingsPage() {
           >
             Save
           </button>
+          {hasCustomAdmin && (
+            <button
+              type="submit"
+              formAction={clearAdminName}
+              className="text-muted-foreground hover:bg-destructive hover:text-white rounded-full border border-border px-4 text-xs font-bold transition-colors"
+            >
+              Delete
+            </button>
+          )}
         </form>
       </div>
 
@@ -81,7 +91,7 @@ export default async function SettingsPage() {
         <ThemeSettings />
       </div>
 
-      <CallerManager callers={callerRoster()} />
+      <CallerManager callers={await callerRoster()} />
 
       <div className="card-soft bg-card space-y-3 rounded-3xl p-5 sm:p-6">
         <h2 className="text-base font-bold">Data &amp; sync</h2>

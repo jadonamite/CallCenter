@@ -1,12 +1,13 @@
+import { outreachWired } from "./outreach-api";
+
 /**
  * Callers — the volunteers who work the phones. Admin-created (name + 4-digit
- * PIN); a caller enters their PIN once per device and every log auto-carries
+ * PIN); a caller enters their PIN once per device and every call log auto-carries
  * their id.
  *
- * Until the outreach API lands, the roster + PINs live here as a stub (mirrors
- * `lib/events.ts`). When it lands: the roster comes from
- * `GET /api/outreach/callers`, and PIN verification moves server-side against
- * the scrypt hash (never ship real PINs to the client — these are placeholders).
+ * The roster is served live from `GET /api/outreach/callers` when the outreach
+ * API is wired; the array below is the seed / local-dev fallback (PINs here are
+ * placeholders — real ones are scrypt-hashed server-side).
  */
 
 export interface CallerRecord {
@@ -18,17 +19,31 @@ export interface CallerRecord {
 }
 
 export const CALLERS: CallerRecord[] = [
-  { id: "c-tola", name: "Sis. Tola", pin: "1234", active: true },
-  { id: "c-kelechi", name: "Bro. Kelechi", pin: "2468", active: true },
-  { id: "c-amina", name: "Sis. Amina", pin: "1379", active: true },
-  { id: "c-femi", name: "Bro. Femi", pin: "8642", active: true },
+  { id: "c-kanyin", name: "Sis. Kanyin", pin: "4304", active: true },
+  { id: "c-amos", name: "Bro. Amos", pin: "9528", active: true },
+  { id: "c-nifemi", name: "Sis. Nifemi", pin: "3483", active: true },
+  { id: "c-emma", name: "Bro. Emma", pin: "5629", active: true },
 ];
 
 export function findCaller(id: string | undefined): CallerRecord | undefined {
   return id ? CALLERS.find((c) => c.id === id) : undefined;
 }
 
-/** Roster for the sign-in picker — id + name only, never the PIN. */
-export function callerRoster(): { id: string; name: string }[] {
+/**
+ * Roster for the sign-in / manager pickers — id + name only, never the PIN.
+ * Live from the API when wired, else the local stub. Server-only (reads secrets).
+ */
+export async function callerRoster(): Promise<{ id: string; name: string }[]> {
+  if (outreachWired()) {
+    try {
+      const res = await fetch(`${process.env.OUTREACH_API}/api/outreach/callers`, {
+        headers: { authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
+        cache: "no-store",
+      });
+      if (res.ok) return (await res.json()) as { id: string; name: string }[];
+    } catch {
+      // fall through to the stub below
+    }
+  }
   return CALLERS.filter((c) => c.active).map(({ id, name }) => ({ id, name }));
 }

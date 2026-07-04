@@ -13,6 +13,13 @@ export async function saveAdminName(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+/** Remove the admin — the greeting falls back to the default "Admin". */
+export async function clearAdminName() {
+  const store = await cookies();
+  store.delete("admin_name");
+  revalidatePath("/", "layout");
+}
+
 /**
  * The invite message used by the WhatsApp deep link (and seeded into the SMS
  * composer). Tokens {name}/{event} fill in per contact. Cookie-backed until the

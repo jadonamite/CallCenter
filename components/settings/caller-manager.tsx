@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Icon, Spinner } from "@/components/icons";
-import { createCaller } from "@/app/caller/actions";
+import { createCaller, deleteCaller } from "@/app/caller/actions";
 
 /**
  * Admin caller roster + registration. Callers sign in on their device with the
@@ -12,6 +12,7 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [pending, startTransition] = useTransition();
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   function submit() {
@@ -25,6 +26,17 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
       } else {
         setMsg({ ok: false, text: res.error ?? "Could not register." });
       }
+    });
+  }
+
+  function remove(id: string, callerName: string) {
+    setMsg(null);
+    setRemovingId(id);
+    startTransition(async () => {
+      const res = await deleteCaller(id);
+      setRemovingId(null);
+      if (res.ok) setMsg({ ok: true, text: `${callerName} removed.` });
+      else setMsg({ ok: false, text: res.error ?? "Could not remove." });
     });
   }
 
@@ -42,9 +54,22 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
           {callers.map((c) => (
             <li
               key={c.id}
-              className="bg-secondary text-secondary-foreground rounded-full px-3 py-1.5 text-xs font-semibold"
+              className="bg-secondary text-secondary-foreground flex items-center gap-1.5 rounded-full py-1.5 pr-1.5 pl-3 text-xs font-semibold"
             >
               {c.name}
+              <button
+                type="button"
+                onClick={() => remove(c.id, c.name)}
+                disabled={pending}
+                aria-label={`Remove ${c.name}`}
+                className="text-muted-foreground hover:bg-destructive hover:text-white flex size-5 items-center justify-center rounded-full transition-colors disabled:opacity-40"
+              >
+                {removingId === c.id ? (
+                  <Spinner className="size-3" />
+                ) : (
+                  <Icon name="close" className="size-3" />
+                )}
+              </button>
             </li>
           ))}
         </ul>

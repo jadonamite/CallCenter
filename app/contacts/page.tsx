@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 import { ContactRowActions } from "@/components/contacts/contact-row-actions";
 import { ContactCard } from "@/components/contacts/contact-card";
 import { CallerBar } from "@/components/caller/caller-bar";
+import { CallerGateProvider } from "@/components/caller/caller-gate";
 import { getEvent } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
 import {
@@ -44,6 +45,7 @@ export default async function ContactsPage({
   const eventName = getEvent(activeEvent).name;
   const callerName = store.get("caller_name")?.value ?? null;
   const inviteTemplate = store.get("invite_template")?.value || undefined;
+  const roster = await callerRoster();
   const { contacts, rollup, originOf, colorOf, teamOf } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
@@ -81,8 +83,9 @@ export default async function ContactsPage({
         </Link>
       </PageHeader>
 
+      <CallerGateProvider callerName={callerName} roster={roster}>
       <div className="bg-background/85 sticky top-0 z-20 -mx-4 space-y-3 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <CallerBar callerName={callerName} roster={callerRoster()} />
+        <CallerBar />
         <ListFilters tabs={TABS} teams={teams} />
       </div>
 
@@ -196,6 +199,7 @@ export default async function ContactsPage({
         basePath="/contacts"
         params={params}
       />
+      </CallerGateProvider>
     </div>
   );
 }

@@ -97,3 +97,19 @@ export async function createCaller(name: string, pin: string): Promise<CreateCal
   revalidatePath("/settings");
   return { ok: true };
 }
+
+/**
+ * Admin: remove a caller. Persists via the API when wired (real ObjectId);
+ * a no-op against the static stub otherwise.
+ */
+export async function deleteCaller(id: string): Promise<CreateCallerResult> {
+  if (outreachWired() && isObjectId(id)) {
+    try {
+      await outreachFetch("/api/outreach/callers", { method: "DELETE", body: { id } });
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+  revalidatePath("/settings");
+  return { ok: true };
+}

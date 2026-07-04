@@ -22,14 +22,22 @@ export function DashboardHeader({
   target,
 }: Props) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 className="text-[1.7rem] font-bold tracking-tight">
+    <header className="flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0 space-y-1.5">
+        <p className="text-muted-foreground text-sm font-medium">
           Hello, {adminName} 👋
-        </h1>
-        <p className="text-muted-foreground mt-0.5 text-sm">
-          {eventName} · {contacts.toLocaleString()} contacts across {teams}{" "}
-          teams · target {target.toLocaleString()}
+        </p>
+        <div className="flex items-center gap-2.5">
+          <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-2xl">
+            <Icon name="calendar" className="size-5.5" />
+          </span>
+          <h1 className="truncate text-[2rem] leading-none font-bold tracking-tight">
+            {eventName}
+          </h1>
+        </div>
+        <p className="text-muted-foreground pt-0.5 text-sm">
+          {contacts.toLocaleString()} contacts across {teams} teams · target{" "}
+          {target.toLocaleString()}
         </p>
       </div>
       <div className="flex items-center gap-2.5">

@@ -6,6 +6,7 @@ import { PhoneSolidIcon } from "@/components/icons/brand";
 import { spring } from "@/lib/motion";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { LogCallDialog } from "./log-call-dialog";
+import { useCallerGate } from "@/components/caller/caller-gate";
 import type { Contact } from "@/lib/types";
 
 /**
@@ -32,11 +33,15 @@ export function ContactCard({
   index?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const { requireCaller } = useCallerGate();
   return (
     <>
       <motion.button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // Gate: must be signed in as a caller before logging a call.
+          if (requireCaller()) setOpen(true);
+        }}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: Math.min(index, 12) * 0.035 }}

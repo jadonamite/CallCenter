@@ -27,10 +27,10 @@ export function isObjectId(id: string | undefined | null): boolean {
 
 type Json = Record<string, unknown>;
 
-/** POST/PATCH JSON with the bearer key. Throws on non-2xx (message from the API). */
+/** POST/PATCH/DELETE JSON with the bearer key. Throws on non-2xx (message from the API). */
 export async function outreachFetch(
   path: string,
-  init: { method: "POST" | "PATCH"; body: Json }
+  init: { method: "POST" | "PATCH" | "DELETE"; body: Json }
 ): Promise<Json> {
   const res = await fetch(`${process.env.OUTREACH_API}${path}`, {
     method: init.method,
