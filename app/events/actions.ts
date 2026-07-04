@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { EVENTS } from "@/lib/events";
+import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 
 export async function setActiveEvent(formData: FormData) {
   const id = formData.get("id");
@@ -34,10 +35,10 @@ export interface SaveEventResult {
 /**
  * Create or edit an event.
  *
- * STUB: events are still config in `lib/events.ts`, so this only validates and
- * reports back. When the outreach API lands, replace the marked block with a
- * bearer-key POST/PATCH to `${OUTREACH_API}/api/outreach/events` and drop the
- * static array. Times are combined into ISO with the Lagos (+01:00) offset.
+ * When wired, a create POSTs to `/api/outreach/events` (persists a real event);
+ * an edit PATCHes it — but only for a real ObjectId, so demo events (string ids
+ * in `lib/events.ts`) stay on the stub. With no env everything validates and
+ * reports back without persisting. Times carry the Lagos (+01:00) offset.
  */
 export async function saveEvent(input: EventFormInput): Promise<SaveEventResult> {
   if (input.name.trim().length < 2) return { ok: false, error: "Event name is required." };
@@ -55,16 +56,28 @@ export async function saveEvent(input: EventFormInput): Promise<SaveEventResult>
   const eventStart = `${input.eventDate}T${input.startTime}:00+01:00`;
   const eventEnd = `${input.eventDate}T${input.endTime}:00+01:00`;
 
-  // ── persistence (deferred to outreach API) ──────────────────────────────
-  // const method = input.id ? "PATCH" : "POST";
-  // await fetch(`${process.env.OUTREACH_API}/api/outreach/events`, {
-  //   method,
-  //   headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
-  //   body: JSON.stringify({ ...input, eventStart, eventEnd }),
-  // });
-  void eventStart;
-  void eventEnd;
-  // ────────────────────────────────────────────────────────────────────────
+  // Live persistence — create always; edit only for a real (non-demo) event id.
+  const editingLive = input.id ? isObjectId(input.id) : false;
+  const canPersist = outreachWired() && (!input.id || editingLive);
+  if (canPersist) {
+    try {
+      await outreachFetch("/api/outreach/events", {
+        method: input.id ? "PATCH" : "POST",
+        body: {
+          id: input.id,
+          name: input.name.trim(),
+          admin: input.admin.trim(),
+          target: input.target,
+          eventStart,
+          eventEnd,
+          campaignStart: input.campaignStart,
+          campaignDays: input.campaignDays,
+        },
+      });
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
 
   revalidatePath("/events");
   revalidatePath("/", "layout");

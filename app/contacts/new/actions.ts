@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { LIVE_EVENT_ID } from "@/lib/events";
+import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 
 export interface SaveContactsInput {
   groupId: string;
@@ -29,10 +30,10 @@ function normalize(name: string, phone: string): { name: string; phone: string }
 /**
  * Bulk-insert a cell's collated list against the active event.
  *
- * STUB: persistence is deferred to the e-register outreach API. When it lands,
- * replace the marked block with a bearer-key POST to
- * `${OUTREACH_API}/api/outreach/contacts` (phone-deduped per event server-side).
- * The validate → dedupe → count → revalidate shape stays.
+ * When the outreach API is wired (env set) and the active event is a real
+ * ObjectId, this POSTs to `/api/outreach/contacts` and trusts the server's
+ * saved/skipped counts (it phone-dedupes per event too). Otherwise it stays on
+ * the demo stub: validate → dedupe → count, persisting nothing.
  */
 export async function saveContacts(input: SaveContactsInput): Promise<SaveContactsResult> {
   const { groupId, broughtBy } = input;
@@ -60,15 +61,27 @@ export async function saveContacts(input: SaveContactsInput): Promise<SaveContac
   const store = await cookies();
   const eventId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
 
-  // ── persistence (deferred to outreach API) ──────────────────────────────
-  // await fetch(`${process.env.OUTREACH_API}/api/outreach/contacts`, {
-  //   method: "POST",
-  //   headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
-  //   body: JSON.stringify({ eventId, groupId, broughtBy: broughtBy.trim(), contacts: clean }),
-  // });
-  void eventId; // used once the API is wired
-  // ────────────────────────────────────────────────────────────────────────
+  // Live persistence — only for a real event id; demo ids stay on the stub.
+  if (outreachWired() && isObjectId(eventId)) {
+    try {
+      const data = await outreachFetch("/api/outreach/contacts", {
+        method: "POST",
+        body: { eventId, groupId, broughtBy: broughtBy.trim(), contacts: clean },
+      });
+      revalidatePath("/contacts");
+      revalidatePath("/");
+      // The API re-dedupes against contacts already on the event; add its skips.
+      return {
+        ok: true,
+        saved: Number(data.saved ?? 0),
+        skipped: skipped + Number(data.skipped ?? 0),
+      };
+    } catch (e) {
+      return { ok: false, saved: 0, skipped, error: (e as Error).message };
+    }
+  }
 
+  // Demo stub: persist nothing, report the batch-local counts.
   revalidatePath("/contacts");
   revalidatePath("/");
   return { ok: true, saved: clean.length, skipped };

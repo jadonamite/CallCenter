@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { CALLERS } from "@/lib/callers";
+import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -15,22 +16,41 @@ export interface SetCallerResult {
 /**
  * Verify a caller's name + 4-digit PIN and remember them on this device.
  *
- * STUB: checks the local roster in `lib/callers.ts`. When the API lands, replace
- * with a POST to `${OUTREACH_API}/api/outreach/callers/verify` (scrypt compare
- * server-side); the cookie contract below stays the same.
+ * When wired and the caller id is a real ObjectId, the PIN is checked server-side
+ * (scrypt) via `/api/outreach/callers/verify`. Demo roster ids fall back to the
+ * local check. The cookie contract is identical either way.
  */
 export async function setCaller(callerId: string, pin: string): Promise<SetCallerResult> {
-  const caller = CALLERS.find((c) => c.id === callerId && c.active);
-  if (!caller) return { ok: false, error: "Pick your name." };
   if (!/^\d{4}$/.test(pin)) return { ok: false, error: "Enter your 4-digit PIN." };
-  if (caller.pin !== pin) return { ok: false, error: "Wrong PIN." };
+
+  let id = callerId;
+  let name: string;
+
+  if (outreachWired() && isObjectId(callerId)) {
+    try {
+      const data = await outreachFetch("/api/outreach/callers/verify", {
+        method: "POST",
+        body: { callerId, pin },
+      });
+      id = String(data.id);
+      name = String(data.name);
+    } catch {
+      // Generic message — don't leak whether the caller exists or the PIN is wrong.
+      return { ok: false, error: "Wrong PIN." };
+    }
+  } else {
+    const caller = CALLERS.find((c) => c.id === callerId && c.active);
+    if (!caller) return { ok: false, error: "Pick your name." };
+    if (caller.pin !== pin) return { ok: false, error: "Wrong PIN." };
+    name = caller.name;
+  }
 
   const store = await cookies();
   const opts = { path: "/", maxAge: YEAR, sameSite: "lax" as const };
-  store.set("caller_id", caller.id, opts);
-  store.set("caller_name", caller.name, opts);
+  store.set("caller_id", id, opts);
+  store.set("caller_name", name, opts);
   revalidatePath("/", "layout");
-  return { ok: true, name: caller.name };
+  return { ok: true, name };
 }
 
 /** Forget the caller on this device (e.g. a shared phone changing hands). */
@@ -49,26 +69,31 @@ export interface CreateCallerResult {
 /**
  * Admin: register a new caller (name + 4-digit PIN).
  *
- * STUB: the roster is static in `lib/callers.ts`, so a new caller won't persist
- * yet — this validates and reports success. When the API lands, replace the
- * marked block with a bearer-key POST to `${OUTREACH_API}/api/outreach/callers`
- * (PIN hashed server-side via scrypt); then the roster comes from the API.
+ * When wired, POSTs to `/api/outreach/callers` (PIN hashed server-side via
+ * scrypt) and the caller persists. With no env it stays on the stub: validates
+ * against the static roster and reports success without persisting.
  */
 export async function createCaller(name: string, pin: string): Promise<CreateCallerResult> {
   if (name.trim().length < 2) return { ok: false, error: "Enter the caller's name." };
   if (!/^\d{4}$/.test(pin)) return { ok: false, error: "PIN must be exactly 4 digits." };
+
+  if (outreachWired()) {
+    try {
+      await outreachFetch("/api/outreach/callers", {
+        method: "POST",
+        body: { name: name.trim(), pin },
+      });
+      revalidatePath("/settings");
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+
+  // Demo stub: guard against duplicates in the static roster, persist nothing.
   if (CALLERS.some((c) => c.name.toLowerCase() === name.trim().toLowerCase())) {
     return { ok: false, error: "A caller with that name already exists." };
   }
-
-  // ── persistence (deferred to outreach API) ──────────────────────────────
-  // await fetch(`${process.env.OUTREACH_API}/api/outreach/callers`, {
-  //   method: "POST",
-  //   headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
-  //   body: JSON.stringify({ name: name.trim(), pin }),
-  // });
-  // ────────────────────────────────────────────────────────────────────────
-
   revalidatePath("/settings");
   return { ok: true };
 }

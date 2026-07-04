@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import type { CallOutcome, Channel, Disposition } from "@/lib/outreach";
 import { CALL_OUTCOMES } from "@/lib/outreach";
+import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 
 export interface LogOutcomeInput {
   contactId: string;
@@ -21,10 +22,10 @@ export interface LogOutcomeResult {
 /**
  * Record a single call/message attempt against a contact.
  *
- * STUB: persistence is deferred to the outreach API. When it lands, replace the
- * marked block with a bearer-key POST to `${OUTREACH_API}/api/outreach/logs`
- * (server derives status + next follow-up from the accumulated logs). The
- * caller id is carried automatically from the per-device cookie set at PIN entry.
+ * When wired (env set) and the contact is a real ObjectId, this POSTs to
+ * `/api/outreach/logs` (the server derives status + next follow-up from the
+ * accumulated logs). Demo contact ids fall back to the stub. The caller id is
+ * carried automatically from the per-device cookie set at PIN entry.
  */
 export async function logOutcome(input: LogOutcomeInput): Promise<LogOutcomeResult> {
   const meta = CALL_OUTCOMES[input.outcome];
@@ -42,15 +43,17 @@ export async function logOutcome(input: LogOutcomeInput): Promise<LogOutcomeResu
   const callerId = store.get("caller_id")?.value ?? "unassigned";
   const channel: Channel = meta.channel;
 
-  // ── persistence (deferred to outreach API) ──────────────────────────────
-  // await fetch(`${process.env.OUTREACH_API}/api/outreach/logs`, {
-  //   method: "POST",
-  //   headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
-  //   body: JSON.stringify({ ...input, callerId, channel, at: new Date().toISOString() }),
-  // });
-  void callerId;
-  void channel;
-  // ────────────────────────────────────────────────────────────────────────
+  // Live persistence — only for a real contact id; demo ids stay on the stub.
+  if (outreachWired() && isObjectId(input.contactId)) {
+    try {
+      await outreachFetch("/api/outreach/logs", {
+        method: "POST",
+        body: { ...input, callerId, channel, at: new Date().toISOString() },
+      });
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
 
   revalidatePath("/contacts");
   revalidatePath("/follow-ups");
