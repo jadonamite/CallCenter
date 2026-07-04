@@ -7,14 +7,16 @@ import { Icon, PhoneSolidIcon } from "@/components/icons";
 import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
+import { logout } from "@/app/login/actions";
 
 interface Props {
   reached: number;
   target: number;
   daysLeft: number;
+  identity?: { role: string; name?: string } | null;
 }
 
-export function Sidebar({ reached, target, daysLeft }: Props) {
+export function Sidebar({ reached, target, daysLeft, identity }: Props) {
   const pathname = usePathname();
   const pct = Math.min(Math.round((reached / target) * 100), 100);
 
@@ -70,6 +72,23 @@ export function Sidebar({ reached, target, daysLeft }: Props) {
           <Icon name="settings" className="size-5 shrink-0" />
           <span className="hidden lg:block">Settings</span>
         </Link>
+
+        {identity && (
+          <form action={logout}>
+            <button
+              type="submit"
+              className="text-muted-foreground hover:bg-secondary hover:text-foreground flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors"
+            >
+              <Icon name="logout" className="size-5 shrink-0" />
+              <span className="hidden lg:block">
+                Sign out
+                <span className="text-muted-foreground/70 ml-1 text-xs font-medium">
+                  {identity.role === "admin" ? "· Admin" : identity.name ? `· ${identity.name}` : ""}
+                </span>
+              </span>
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="hidden p-4 lg:block">

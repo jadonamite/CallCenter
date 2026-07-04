@@ -6,6 +6,9 @@ import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
 import { getGroups, ancestryMap } from "@/lib/groups";
 import { DEFAULT_INVITE } from "@/lib/contact-links";
+import { Icon } from "@/components/icons";
+import { getSession } from "@/lib/auth";
+import { logout } from "../login/actions";
 import { saveAdminName, saveInviteTemplate, clearAdminName } from "./actions";
 
 export const metadata = { title: "Settings · Outreach Call Center" };
@@ -17,6 +20,7 @@ export default async function SettingsPage() {
   const activeId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
   const activeEvent = EVENTS.find((e) => e.id === activeId) ?? EVENTS[0];
   const inviteTemplate = store.get("invite_template")?.value ?? DEFAULT_INVITE;
+  const session = await getSession();
 
   // Senior cells (with their team name) for the caller-scope picker.
   const groups = await getGroups();
@@ -128,6 +132,25 @@ export default async function SettingsPage() {
             </dd>
           </div>
         </dl>
+      </div>
+
+      <div className="card-soft bg-card flex flex-wrap items-center justify-between gap-3 rounded-3xl p-5 sm:p-6">
+        <div>
+          <h2 className="text-base font-bold">
+            Signed in{session?.role === "admin" ? " as Admin" : session?.role === "caller" ? ` as ${session.name}` : ""}
+          </h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            End this session on this device
+          </p>
+        </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="text-muted-foreground hover:bg-destructive flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-bold transition-colors hover:text-white"
+          >
+            <Icon name="logout" className="size-4" /> Sign out
+          </button>
+        </form>
       </div>
     </div>
   );
