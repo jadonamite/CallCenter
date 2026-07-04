@@ -29,8 +29,12 @@ interface Props {
   viewAllHref?: string;
   /** hide the rank column (single-team pages) */
   hideRank?: boolean;
-  /** render only the team rows, non-interactive — used for the downloadable report */
-  collapsedOnly?: boolean;
+  /**
+   * Static, non-interactive render for the downloadable report: teams and their
+   * senior cells show, cells stay collapsed. Chevrons render in their resting
+   * state but nothing is clickable.
+   */
+  readOnly?: boolean;
 }
 
 /** A team with its senior cells, each carrying its own cells (rebuilt from the flat, tree-ordered rows). */
@@ -61,7 +65,7 @@ export function Leaderboard({
   subtitle = "Contacts collated per team, rolled up through senior cells and cells — tap a team or senior cell to drill in",
   viewAllHref,
   hideRank = false,
-  collapsedOnly = false,
+  readOnly = false,
 }: Props) {
   // Default: teams expanded (senior cells visible), senior cells collapsed (cells hidden).
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
@@ -147,15 +151,16 @@ export function Leaderboard({
             <TableBody>
               {blocks.map(({ team, seniors }) => {
                 const teamColor = teamColorOf[team.id];
-                const teamOpen = !collapsedOnly && !collapsedTeams.has(team.id);
+                // readOnly: teams always expanded (senior cells show), non-interactive.
+                const teamOpen = readOnly || !collapsedTeams.has(team.id);
                 return (
                   <FragmentRows key={team.id}>
                     {/* team row */}
                     <TableRow
-                      className={cn("border-border/60", !collapsedOnly && "cursor-pointer")}
+                      className={cn("border-border/60", !readOnly && "cursor-pointer")}
                       style={{ background: `color-mix(in srgb, ${teamColor} 7%, transparent)` }}
                       onClick={
-                        collapsedOnly
+                        readOnly
                           ? undefined
                           : () => setCollapsedTeams((s) => toggle(s, team.id))
                       }
@@ -167,14 +172,12 @@ export function Leaderboard({
                       )}
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          {!collapsedOnly && (
-                            <Icon name="chevron-right"
-                              className={cn(
-                                "text-muted-foreground size-4 shrink-0 transition-transform",
-                                teamOpen && "rotate-90"
-                              )}
-                            />
-                          )}
+                          <Icon name="chevron-right"
+                            className={cn(
+                              "text-muted-foreground size-4 shrink-0 transition-transform",
+                              teamOpen && "rotate-90"
+                            )}
+                          />
                           <span className="size-2.5 shrink-0 rounded-full" style={{ background: teamColor }} />
                           <Link
                             href={`/teams/${team.id}`}
@@ -200,17 +203,20 @@ export function Leaderboard({
                     {/* senior cells */}
                     {teamOpen &&
                       seniors.map(({ senior, cells }) => {
-                        const seniorOpen = expandedSeniors.has(senior.id);
+                        // readOnly: cells always collapsed, non-interactive.
+                        const seniorOpen = !readOnly && expandedSeniors.has(senior.id);
+                        const seniorClickable = !readOnly && cells.length > 0;
                         return (
                           <FragmentRows key={senior.id}>
                             <TableRow
                               className={cn(
                                 "border-border/60",
-                                cells.length > 0 && "cursor-pointer"
+                                seniorClickable && "cursor-pointer"
                               )}
-                              onClick={() =>
-                                cells.length > 0 &&
-                                setExpandedSeniors((s) => toggle(s, senior.id))
+                              onClick={
+                                seniorClickable
+                                  ? () => setExpandedSeniors((s) => toggle(s, senior.id))
+                                  : undefined
                               }
                             >
                               {!hideRank && <TableCell className="rounded-l-2xl" />}
