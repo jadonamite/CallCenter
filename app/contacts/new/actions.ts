@@ -8,7 +8,7 @@ import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 export interface SaveContactsInput {
   groupId: string;
   broughtBy: string;
-  contacts: { name: string; phone: string }[];
+  contacts: { name: string; phone: string; location?: string }[];
 }
 
 export interface SaveContactsResult {
@@ -43,7 +43,7 @@ export async function saveContacts(input: SaveContactsInput): Promise<SaveContac
 
   // validate + dedupe by phone within this batch
   const seen = new Set<string>();
-  const clean: { name: string; phone: string }[] = [];
+  const clean: { name: string; phone: string; location?: string }[] = [];
   let skipped = 0;
   for (const row of input.contacts) {
     const n = normalize(row.name, row.phone);
@@ -52,7 +52,8 @@ export async function saveContacts(input: SaveContactsInput): Promise<SaveContac
       continue;
     }
     seen.add(n.phone);
-    clean.push(n);
+    const location = row.location?.trim().slice(0, 80) || undefined;
+    clean.push({ ...n, location });
   }
   if (clean.length === 0) {
     return { ok: false, saved: 0, skipped, error: "No valid rows to save." };

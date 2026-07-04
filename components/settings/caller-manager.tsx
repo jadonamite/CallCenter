@@ -2,27 +2,63 @@
 
 import { useState, useTransition } from "react";
 import { Icon, Spinner } from "@/components/icons";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createCaller, deleteCaller } from "@/app/caller/actions";
+
+interface RosterCaller {
+  id: string;
+  name: string;
+  seniorCellName?: string | null;
+}
+interface SeniorCellOption {
+  id: string;
+  name: string;
+  team: string;
+}
+
+const ALL_ACCESS = "__all__";
 
 /**
  * Admin caller roster + registration. Callers sign in on their device with the
- * 4-digit PIN set here; every call log auto-carries their id.
+ * 4-digit PIN set here; every call log auto-carries their id. A caller assigned
+ * a senior cell only sees that senior cell's contacts; unassigned = all-access.
  */
-export function CallerManager({ callers }: { callers: { id: string; name: string }[] }) {
+export function CallerManager({
+  callers,
+  seniorCells,
+}: {
+  callers: RosterCaller[];
+  seniorCells: SeniorCellOption[];
+}) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [seniorId, setSeniorId] = useState<string>(ALL_ACCESS);
   const [pending, startTransition] = useTransition();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   function submit() {
     setMsg(null);
+    const senior =
+      seniorId === ALL_ACCESS
+        ? null
+        : (() => {
+            const s = seniorCells.find((c) => c.id === seniorId);
+            return s ? { id: s.id, name: s.name } : null;
+          })();
     startTransition(async () => {
-      const res = await createCaller(name, pin);
+      const res = await createCaller(name, pin, senior);
       if (res.ok) {
         setMsg({ ok: true, text: `${name.trim()} registered.` });
         setName("");
         setPin("");
+        setSeniorId(ALL_ACCESS);
       } else {
         setMsg({ ok: false, text: res.error ?? "Could not register." });
       }
@@ -45,7 +81,8 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
       <div>
         <h2 className="text-base font-bold">Callers</h2>
         <p className="text-muted-foreground mt-0.5 text-xs">
-          Register the volunteers working the phones — each signs in once per device with their PIN
+          Register the volunteers working the phones — each signs in once per device with their PIN.
+          Assign a senior cell to scope their call queue, or leave it open for all cells.
         </p>
       </div>
 
@@ -57,6 +94,14 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
               className="bg-secondary text-secondary-foreground flex items-center gap-1.5 rounded-full py-1.5 pr-1.5 pl-3 text-xs font-semibold"
             >
               {c.name}
+              {c.seniorCellName ? (
+                <span className="text-primary/90 inline-flex items-center gap-0.5">
+                  <Icon name="teams" className="size-3" />
+                  {c.seniorCellName}
+                </span>
+              ) : (
+                <span className="text-muted-foreground/70">· all cells</span>
+              )}
               <button
                 type="button"
                 onClick={() => remove(c.id, c.name)}
@@ -91,6 +136,19 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
           placeholder="4-digit PIN"
           className="bg-secondary placeholder:text-muted-foreground focus:ring-ring h-10 w-32 rounded-full px-4 text-center text-sm font-bold tracking-widest tabular-nums outline-none focus:ring-2"
         />
+        <Select value={seniorId} onValueChange={setSeniorId}>
+          <SelectTrigger className="h-10 w-[190px] rounded-full">
+            <SelectValue placeholder="Senior cell" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_ACCESS}>All cells (no scope)</SelectItem>
+            {seniorCells.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name} · {s.team}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <button
           type="button"
           onClick={submit}

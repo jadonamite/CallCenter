@@ -4,6 +4,7 @@ import { ThemeSettings } from "@/components/settings/theme-settings";
 import { CallerManager } from "@/components/settings/caller-manager";
 import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
+import { getGroups, ancestryMap } from "@/lib/groups";
 import { DEFAULT_INVITE } from "@/lib/contact-links";
 import { saveAdminName, saveInviteTemplate, clearAdminName } from "./actions";
 
@@ -16,6 +17,18 @@ export default async function SettingsPage() {
   const activeId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
   const activeEvent = EVENTS.find((e) => e.id === activeId) ?? EVENTS[0];
   const inviteTemplate = store.get("invite_template")?.value ?? DEFAULT_INVITE;
+
+  // Senior cells (with their team name) for the caller-scope picker.
+  const groups = await getGroups();
+  const ancestry = ancestryMap(groups);
+  const seniorCells = groups
+    .filter((g) => g.level === "SENIOR_CELL")
+    .map((g) => {
+      const chain = ancestry.get(g._id) ?? [];
+      const team = chain[chain.length - 1];
+      return { id: g._id, name: g.name, team: team?.name ?? "" };
+    })
+    .sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -91,7 +104,7 @@ export default async function SettingsPage() {
         <ThemeSettings />
       </div>
 
-      <CallerManager callers={await callerRoster()} />
+      <CallerManager callers={await callerRoster()} seniorCells={seniorCells} />
 
       <div className="card-soft bg-card space-y-3 rounded-3xl p-5 sm:p-6">
         <h2 className="text-base font-bold">Data &amp; sync</h2>

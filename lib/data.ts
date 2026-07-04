@@ -42,6 +42,12 @@ const AGENTS = [
   "Sis. Tola", "Bro. Kelechi", "Sis. Amina", "Bro. Femi", "Sis. Chidera",
   "Bro. Sola", "Sis. Nneka", "Bro. Tobi", "Sis. Rachael", "Bro. Uche",
 ];
+/** Where a contact is coming from — campus areas / hostels / nearby towns. */
+const LOCATIONS = [
+  "New Hostel", "North Gate", "South Gate", "FUTA South", "Obakekere",
+  "Aule Road", "Ijoka", "Oba-Ile", "Ilesa Garage", "Shagari Village",
+  "Alagbaka", "Ijapo Estate", "Oke-Aro", "Apatapiti", "Gaga",
+];
 
 function hashId(id: string): number {
   let h = 0;
@@ -69,6 +75,7 @@ export function generateContacts(roots: GroupNode[]): Contact[] {
         LAST_NAMES[Math.floor(rand() * LAST_NAMES.length)]}`;
       const phone = `080${Math.floor(10000000 + rand() * 89999999)}`;
       const broughtBy = AGENTS[Math.floor(rand() * AGENTS.length)];
+      const location = LOCATIONS[Math.floor(rand() * LOCATIONS.length)];
 
       // ~78% of contacts have been attempted so far
       const attempted = rand() < 0.78;
@@ -118,6 +125,7 @@ export function generateContacts(roots: GroupNode[]): Contact[] {
         phone,
         groupId: leaf._id,
         broughtBy,
+        location,
         contactedDay,
         channel,
         outcome,

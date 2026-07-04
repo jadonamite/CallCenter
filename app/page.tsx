@@ -8,6 +8,7 @@ import { StatCards, type Stat } from "@/components/dashboard/stat-cards";
 import { OutreachChart } from "@/components/dashboard/outreach-chart";
 import { TeamDonut, type TeamSlice } from "@/components/dashboard/team-donut";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
+import { CollationReport } from "@/components/dashboard/collation-report";
 import { FollowupTable } from "@/components/dashboard/followup-table";
 import { ancestryMap, buildTree, getGroups } from "@/lib/groups";
 import { teamColorMap } from "@/lib/team-colors";
@@ -169,6 +170,18 @@ export default async function DashboardPage() {
         <div className="min-w-0">
           <TeamDonut teams={teamSlices} outcomes={outcomes} />
         </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-bold">Collation &amp; standings</h2>
+        <CollationReport
+          eventName={activeEvent.name}
+          dateLabel={fmtEventDay(activeEvent)}
+          teams={teamSlices}
+          outcomes={outcomes}
+          rollup={rollup}
+          teamColorOf={teamColorOf}
+        />
       </div>
 
       <Leaderboard rows={rollup} teamColorOf={teamColorOf} viewAllHref="/teams" />

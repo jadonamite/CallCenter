@@ -44,14 +44,20 @@ export default async function ContactsPage({
   const activeEvent = store.get("active_event")?.value;
   const eventName = getEvent(activeEvent).name;
   const callerName = store.get("caller_name")?.value ?? null;
+  const callerSeniorId = store.get("caller_senior_id")?.value || null;
+  const callerSeniorName = store.get("caller_senior_name")?.value || null;
   const inviteTemplate = store.get("invite_template")?.value || undefined;
   const roster = await callerRoster();
-  const { contacts, rollup, originOf, colorOf, teamOf } = await loadAppData();
+  const { contacts, rollup, originOf, colorOf, teamOf, seniorOf } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
     .map((t) => ({ id: t.id, name: t.name }));
 
-  let rows = [...contacts].sort((a, b) => a.name.localeCompare(b.name));
+  // Caller scope: a caller assigned to a senior cell only sees its contacts.
+  const scopedContacts = callerSeniorId
+    ? contacts.filter((c) => seniorOf[c.groupId] === callerSeniorId)
+    : contacts;
+  let rows = [...scopedContacts].sort((a, b) => a.name.localeCompare(b.name));
   const status = sp.status ?? "all";
   if (status !== "all") rows = rows.filter((c) => c.outcome === status);
   if (sp.team) rows = rows.filter((c) => teamOf[c.groupId] === sp.team);
@@ -73,7 +79,7 @@ export default async function ContactsPage({
     <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
       <PageHeader
         title="Contacts"
-        subtitle={`${rows.length.toLocaleString()} of ${contacts.length.toLocaleString()} collated`}
+        subtitle={`${rows.length.toLocaleString()} of ${scopedContacts.length.toLocaleString()} collated`}
       >
         <Link
           href="/contacts/new"
@@ -86,6 +92,12 @@ export default async function ContactsPage({
       <CallerGateProvider callerName={callerName} roster={roster}>
       <div className="bg-background/85 sticky top-0 z-20 -mx-4 space-y-3 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <CallerBar />
+        {callerSeniorId && (
+          <p className="bg-primary/10 text-primary flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold">
+            <Icon name="teams" className="size-3.5 shrink-0" />
+            Showing {callerSeniorName || "your senior cell"} only — your assigned senior cell
+          </p>
+        )}
         <ListFilters tabs={TABS} teams={teams} />
       </div>
 
@@ -100,7 +112,7 @@ export default async function ContactsPage({
           <ContactCard
             key={c.id}
             index={i}
-            contact={{ id: c.id, name: c.name, phone: c.phone, broughtBy: c.broughtBy }}
+            contact={{ id: c.id, name: c.name, phone: c.phone, broughtBy: c.broughtBy, location: c.location }}
             origin={originOf[c.groupId] ?? "—"}
             color={colorOf[c.groupId]}
             outcome={c.outcome}
@@ -122,13 +134,14 @@ export default async function ContactsPage({
       {/* desktop — admin table */}
       <div className="card-soft bg-card hidden rounded-3xl p-5 sm:p-6 md:block">
         <div className="scroll-x">
-          <div className="min-w-[860px]">
+          <div className="min-w-[960px]">
             <Table className="sticky-first">
               <TableHeader>
                 <TableRow className="border-none">
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>From</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Brought by</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last contact</TableHead>
@@ -138,7 +151,7 @@ export default async function ContactsPage({
               <TableBody>
                 {pageRows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+                    <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
                       No contacts match these filters.
                     </TableCell>
                   </TableRow>
@@ -161,6 +174,16 @@ export default async function ContactsPage({
                         >
                           {originOf[c.groupId] ?? "—"}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.location ? (
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <Icon name="pin" className="size-3.5 shrink-0 opacity-70" />
+                            {c.location}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {c.broughtBy}

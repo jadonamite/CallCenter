@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Icon } from "@/components/icons";
 import { PhoneSolidIcon } from "@/components/icons/brand";
 import { spring } from "@/lib/motion";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -23,7 +24,7 @@ export function ContactCard({
   inviteTemplate,
   index = 0,
 }: {
-  contact: { id: string; name: string; phone: string; broughtBy: string };
+  contact: { id: string; name: string; phone: string; broughtBy: string; location?: string | null };
   origin: string;
   color: string;
   outcome: Contact["outcome"];
@@ -66,6 +67,12 @@ export function ContactCard({
             <span className="text-muted-foreground font-mono tabular-nums">
               {contact.phone}
             </span>
+            {contact.location && (
+              <span className="text-muted-foreground/80 inline-flex items-center gap-0.5">
+                <Icon name="pin" className="size-3 shrink-0" />
+                {contact.location}
+              </span>
+            )}
             <span className="text-muted-foreground/70">· {lastContact}</span>
           </div>
         </div>

@@ -29,6 +29,8 @@ interface Props {
   viewAllHref?: string;
   /** hide the rank column (single-team pages) */
   hideRank?: boolean;
+  /** render only the team rows, non-interactive — used for the downloadable report */
+  collapsedOnly?: boolean;
 }
 
 /** A team with its senior cells, each carrying its own cells (rebuilt from the flat, tree-ordered rows). */
@@ -59,6 +61,7 @@ export function Leaderboard({
   subtitle = "Contacts collated per team, rolled up through senior cells and cells — tap a team or senior cell to drill in",
   viewAllHref,
   hideRank = false,
+  collapsedOnly = false,
 }: Props) {
   // Default: teams expanded (senior cells visible), senior cells collapsed (cells hidden).
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
@@ -144,14 +147,18 @@ export function Leaderboard({
             <TableBody>
               {blocks.map(({ team, seniors }) => {
                 const teamColor = teamColorOf[team.id];
-                const teamOpen = !collapsedTeams.has(team.id);
+                const teamOpen = !collapsedOnly && !collapsedTeams.has(team.id);
                 return (
                   <FragmentRows key={team.id}>
                     {/* team row */}
                     <TableRow
-                      className="border-border/60 cursor-pointer"
+                      className={cn("border-border/60", !collapsedOnly && "cursor-pointer")}
                       style={{ background: `color-mix(in srgb, ${teamColor} 7%, transparent)` }}
-                      onClick={() => setCollapsedTeams((s) => toggle(s, team.id))}
+                      onClick={
+                        collapsedOnly
+                          ? undefined
+                          : () => setCollapsedTeams((s) => toggle(s, team.id))
+                      }
                     >
                       {!hideRank && (
                         <TableCell className="text-muted-foreground rounded-l-2xl font-bold tabular-nums">
@@ -160,12 +167,14 @@ export function Leaderboard({
                       )}
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          <Icon name="chevron-right"
-                            className={cn(
-                              "text-muted-foreground size-4 shrink-0 transition-transform",
-                              teamOpen && "rotate-90"
-                            )}
-                          />
+                          {!collapsedOnly && (
+                            <Icon name="chevron-right"
+                              className={cn(
+                                "text-muted-foreground size-4 shrink-0 transition-transform",
+                                teamOpen && "rotate-90"
+                              )}
+                            />
+                          )}
                           <span className="size-2.5 shrink-0 rounded-full" style={{ background: teamColor }} />
                           <Link
                             href={`/teams/${team.id}`}

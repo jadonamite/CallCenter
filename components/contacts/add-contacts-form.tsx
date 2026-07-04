@@ -15,26 +15,32 @@ import { saveContacts, type SaveContactsResult } from "@/app/contacts/new/action
 interface ParsedRow {
   name: string;
   phone: string;
+  /** optional 3rd column — where the contact is coming from */
+  location: string;
   valid: boolean;
   reason?: string;
 }
 
-/** accepts "Name, 080…", "Name - 080…", or "Name 080…" one per line */
+/**
+ * accepts "Name, 080…", "Name - 080…", or "Name 080…" one per line, with an
+ * optional trailing location: "Name, 080…, New Hostel".
+ */
 function parseLines(text: string): ParsedRow[] {
   return text
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line) => {
-      const m = line.match(/^(.*?)[,\-–\s]+(\+?\d[\d\s]{7,15})$/);
-      if (!m) return { name: line, phone: "", valid: false, reason: "no phone found" };
+      const m = line.match(/^(.*?)[,\-–\s]+(\+?\d[\d\s]{7,15})(?:[,\-–\s]+(.*))?$/);
+      if (!m) return { name: line, phone: "", location: "", valid: false, reason: "no phone found" };
       const name = m[1].trim().replace(/[,\-–]+$/, "").trim();
       const phone = m[2].replace(/\s/g, "").replace(/^\+234/, "0");
+      const location = (m[3] ?? "").trim().replace(/[,\-–]+$/, "").trim().slice(0, 80);
       if (name.length < 2)
-        return { name, phone, valid: false, reason: "name missing" };
+        return { name, phone, location, valid: false, reason: "name missing" };
       if (!/^0\d{10}$/.test(phone))
-        return { name, phone, valid: false, reason: "phone must be 11 digits" };
-      return { name, phone, valid: true };
+        return { name, phone, location, valid: false, reason: "phone must be 11 digits" };
+      return { name, phone, location, valid: true };
     });
 }
 
@@ -67,7 +73,11 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
       const res = await saveContacts({
         groupId: targetGroup._id,
         broughtBy: broughtBy.trim(),
-        contacts: valid.map((r) => ({ name: r.name, phone: r.phone })),
+        contacts: valid.map((r) => ({
+          name: r.name,
+          phone: r.phone,
+          location: r.location || undefined,
+        })),
       });
       setResult(res);
       if (res.ok) setText("");
@@ -153,15 +163,15 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
         <div>
           <h2 className="text-base font-bold">Paste the list</h2>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            One person per line — “Name, 080XXXXXXXX”. Straight from WhatsApp
-            works.
+            One person per line — “Name, 080XXXXXXXX”, with an optional location:
+            “Name, 080XXXXXXXX, New Hostel”. Straight from WhatsApp works.
           </p>
         </div>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={7}
-          placeholder={"Chinedu Okafor, 08031234567\nAmara Eze - 08087654321"}
+          placeholder={"Chinedu Okafor, 08031234567, New Hostel\nAmara Eze - 08087654321"}
           className="bg-secondary placeholder:text-muted-foreground/60 focus:ring-ring w-full resize-y rounded-2xl p-4 font-mono text-sm outline-none focus:ring-2"
         />
 
@@ -178,6 +188,12 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
                 <span className="text-muted-foreground font-mono text-xs">
                   {r.phone || ""}
                 </span>
+                {r.location && (
+                  <span className="text-muted-foreground/80 inline-flex items-center gap-1 text-xs">
+                    <Icon name="pin" className="size-3 shrink-0" />
+                    {r.location}
+                  </span>
+                )}
                 {!r.valid && (
                   <span className="text-destructive ml-auto text-xs">{r.reason}</span>
                 )}

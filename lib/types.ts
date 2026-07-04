@@ -27,6 +27,8 @@ export interface Contact {
   /** leaf group (cell) that brought this contact */
   groupId: string;
   broughtBy: string;
+  /** where the contact is coming from — area/address; null = not captured */
+  location: string | null;
   /** day index within the 7-week plan when contact was attempted; null = not yet */
   contactedDay: number | null;
   channel: Channel | null;

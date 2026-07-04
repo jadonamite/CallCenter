@@ -25,6 +25,8 @@ export async function setCaller(callerId: string, pin: string): Promise<SetCalle
 
   let id = callerId;
   let name: string;
+  let seniorCellId: string | null = null;
+  let seniorCellName: string | null = null;
 
   if (outreachWired() && isObjectId(callerId)) {
     try {
@@ -34,6 +36,8 @@ export async function setCaller(callerId: string, pin: string): Promise<SetCalle
       });
       id = String(data.id);
       name = String(data.name);
+      seniorCellId = data.seniorCellId ? String(data.seniorCellId) : null;
+      seniorCellName = data.seniorCellName ? String(data.seniorCellName) : null;
     } catch {
       // Generic message — don't leak whether the caller exists or the PIN is wrong.
       return { ok: false, error: "Wrong PIN." };
@@ -43,12 +47,23 @@ export async function setCaller(callerId: string, pin: string): Promise<SetCalle
     if (!caller) return { ok: false, error: "Pick your name." };
     if (caller.pin !== pin) return { ok: false, error: "Wrong PIN." };
     name = caller.name;
+    seniorCellId = caller.seniorCellId ?? null;
+    seniorCellName = caller.seniorCellName ?? null;
   }
 
   const store = await cookies();
   const opts = { path: "/", maxAge: YEAR, sameSite: "lax" as const };
   store.set("caller_id", id, opts);
   store.set("caller_name", name, opts);
+  // Senior-cell scope: set when assigned, cleared otherwise so a re-signin as an
+  // all-access caller doesn't inherit a stale scope.
+  if (seniorCellId) {
+    store.set("caller_senior_id", seniorCellId, opts);
+    store.set("caller_senior_name", seniorCellName ?? "", opts);
+  } else {
+    store.delete("caller_senior_id");
+    store.delete("caller_senior_name");
+  }
   revalidatePath("/", "layout");
   return { ok: true, name };
 }
@@ -58,6 +73,8 @@ export async function clearCaller() {
   const store = await cookies();
   store.delete("caller_id");
   store.delete("caller_name");
+  store.delete("caller_senior_id");
+  store.delete("caller_senior_name");
   revalidatePath("/", "layout");
 }
 
@@ -73,7 +90,11 @@ export interface CreateCallerResult {
  * scrypt) and the caller persists. With no env it stays on the stub: validates
  * against the static roster and reports success without persisting.
  */
-export async function createCaller(name: string, pin: string): Promise<CreateCallerResult> {
+export async function createCaller(
+  name: string,
+  pin: string,
+  seniorCell?: { id: string; name: string } | null
+): Promise<CreateCallerResult> {
   if (name.trim().length < 2) return { ok: false, error: "Enter the caller's name." };
   if (!/^\d{4}$/.test(pin)) return { ok: false, error: "PIN must be exactly 4 digits." };
 
@@ -81,7 +102,12 @@ export async function createCaller(name: string, pin: string): Promise<CreateCal
     try {
       await outreachFetch("/api/outreach/callers", {
         method: "POST",
-        body: { name: name.trim(), pin },
+        body: {
+          name: name.trim(),
+          pin,
+          seniorCellId: seniorCell?.id,
+          seniorCellName: seniorCell?.name,
+        },
       });
       revalidatePath("/settings");
       return { ok: true };
