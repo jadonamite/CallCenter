@@ -7,6 +7,7 @@ import { PhoneSolidIcon } from "@/components/icons/brand";
 import { spring } from "@/lib/motion";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { LogCallDialog } from "./log-call-dialog";
+import { DeleteContactButton } from "./delete-contact-button";
 import { useCallerGate } from "@/components/caller/caller-gate";
 import type { Contact } from "@/lib/types";
 
@@ -23,6 +24,7 @@ export function ContactCard({
   eventName,
   inviteTemplate,
   index = 0,
+  isAdmin = false,
 }: {
   contact: { id: string; name: string; phone: string; broughtBy: string; location?: string | null };
   origin: string;
@@ -32,11 +34,19 @@ export function ContactCard({
   eventName: string;
   inviteTemplate?: string;
   index?: number;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const { requireCaller } = useCallerGate();
   return (
-    <>
+    <div className="relative">
+      {isAdmin && (
+        <DeleteContactButton
+          id={contact.id}
+          name={contact.name}
+          className="absolute top-2 right-2 z-10 size-7 bg-card/80 backdrop-blur"
+        />
+      )}
       <motion.button
         type="button"
         onClick={() => {
@@ -88,6 +98,6 @@ export function ContactCard({
         eventName={eventName}
         inviteTemplate={inviteTemplate}
       />
-    </>
+    </div>
   );
 }

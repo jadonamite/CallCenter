@@ -26,16 +26,41 @@ export interface LoginResult {
   error?: string;
 }
 
-/** Admin sign-in against the shared ADMIN_ACCESS_CODE. */
+/**
+ * Admin sign-in. When wired, the code is checked against the runtime code set
+ * from the dashboard (scrypt hash in the outreach DB); if none is set there yet,
+ * it falls back to the env `ADMIN_ACCESS_CODE` seed.
+ */
 export async function adminLogin(_prev: LoginResult, formData: FormData): Promise<LoginResult> {
   const code = String(formData.get("code") ?? "");
-  const expected = process.env.ADMIN_ACCESS_CODE;
-  if (!expected) return { error: "Admin sign-in isn't configured yet." };
-  if (!code || !safeEqual(code, expected)) return { error: "Wrong access code." };
+  if (!code) return { error: "Enter the access code." };
+
+  let ok = false;
+  if (outreachWired()) {
+    try {
+      const res = await outreachFetch("/api/outreach/admin-code/verify", {
+        method: "POST",
+        body: { code },
+      });
+      if (res.configured) ok = Boolean(res.ok);
+      else ok = envCodeMatches(code); // no DB code yet → env seed
+    } catch {
+      ok = envCodeMatches(code); // API hiccup → env seed still works
+    }
+  } else {
+    ok = envCodeMatches(code);
+  }
+
+  if (!ok) return { error: "Wrong access code." };
 
   const store = await cookies();
   store.set(SESSION_COOKIE, await signAdminSession(), cookieOptions());
   redirect("/");
+}
+
+function envCodeMatches(code: string): boolean {
+  const expected = process.env.ADMIN_ACCESS_CODE;
+  return Boolean(expected) && safeEqual(code, expected!);
 }
 
 /**

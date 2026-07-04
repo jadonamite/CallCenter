@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { PageHeader } from "@/components/shell/page-header";
 import { ThemeSettings } from "@/components/settings/theme-settings";
 import { CallerManager } from "@/components/settings/caller-manager";
-import { EVENTS, LIVE_EVENT_ID } from "@/lib/events";
+import { AdminCodeForm } from "@/components/settings/admin-code-form";
 import { callerRoster } from "@/lib/callers";
 import { getGroups, ancestryMap } from "@/lib/groups";
 import { DEFAULT_INVITE } from "@/lib/contact-links";
@@ -17,8 +17,6 @@ export default async function SettingsPage() {
   const store = await cookies();
   const adminName = store.get("admin_name")?.value ?? "Admin";
   const hasCustomAdmin = Boolean(store.get("admin_name")?.value);
-  const activeId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
-  const activeEvent = EVENTS.find((e) => e.id === activeId) ?? EVENTS[0];
   const inviteTemplate = store.get("invite_template")?.value ?? DEFAULT_INVITE;
   const session = await getSession();
 
@@ -71,6 +69,8 @@ export default async function SettingsPage() {
         </form>
       </div>
 
+      <AdminCodeForm />
+
       <div className="card-soft bg-card space-y-4 rounded-3xl p-5 sm:p-6">
         <div>
           <h2 className="text-base font-bold">Invite message</h2>
@@ -110,29 +110,12 @@ export default async function SettingsPage() {
 
       <CallerManager callers={await callerRoster()} seniorCells={seniorCells} />
 
-      <div className="card-soft bg-card space-y-3 rounded-3xl p-5 sm:p-6">
-        <h2 className="text-base font-bold">Data &amp; sync</h2>
-        <dl className="space-y-2.5 text-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <dt className="text-muted-foreground">Groups source</dt>
-            <dd className="font-mono text-xs">e-register-nine.vercel.app/api/groups</dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Groups refresh</dt>
-            <dd className="font-semibold">every 5 minutes</dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Active event</dt>
-            <dd className="font-semibold">{activeEvent.name}</dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Contacts &amp; outreach data</dt>
-            <dd className="text-muted-foreground text-xs">
-              simulated — persistence lands with the outreach API
-            </dd>
-          </div>
-        </dl>
-      </div>
+      {/*
+        Data & sync — hidden from admins (internal plumbing detail, not
+        actionable). Kept here for reference:
+        - Groups source: e-register-nine.vercel.app/api/groups (refreshes every 5 min)
+        - Active event + contacts/outreach data come from the outreach API.
+      */}
 
       <div className="card-soft bg-card flex flex-wrap items-center justify-between gap-3 rounded-3xl p-5 sm:p-6">
         <div>

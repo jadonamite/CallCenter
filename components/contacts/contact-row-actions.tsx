@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { LogCallDialog } from "./log-call-dialog";
+import { DeleteContactButton } from "./delete-contact-button";
 import { useCallerGate } from "@/components/caller/caller-gate";
 
 /** Per-row "Log call" trigger + dialog. Lives client-side so the table stays a server component. */
@@ -10,15 +11,17 @@ export function ContactRowActions({
   contact,
   eventName,
   inviteTemplate,
+  isAdmin = false,
 }: {
   contact: { id: string; name: string; phone: string };
   eventName: string;
   inviteTemplate?: string;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const { requireCaller } = useCallerGate();
   return (
-    <>
+    <div className="inline-flex items-center justify-end gap-2">
       <button
         type="button"
         onClick={() => {
@@ -29,6 +32,7 @@ export function ContactRowActions({
       >
         <Icon name="call" className="size-3.5" /> Log
       </button>
+      {isAdmin && <DeleteContactButton id={contact.id} name={contact.name} className="size-8" />}
       <LogCallDialog
         open={open}
         onOpenChange={setOpen}
@@ -36,6 +40,6 @@ export function ContactRowActions({
         eventName={eventName}
         inviteTemplate={inviteTemplate}
       />
-    </>
+    </div>
   );
 }

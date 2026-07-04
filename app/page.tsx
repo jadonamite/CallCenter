@@ -162,6 +162,31 @@ export default async function DashboardPage() {
         target={plan.target}
       />
 
+      {/* Event progress — the sidebar card is desktop-only, so surface it on mobile here. */}
+      <div className="card-soft bg-card flex items-center gap-4 rounded-3xl p-4 md:hidden">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold tracking-widest uppercase opacity-60">
+            Event in {Math.max(plan.days - plan.todayIndex - 1, 0)} day
+            {Math.max(plan.days - plan.todayIndex - 1, 0) === 1 ? "" : "s"}
+          </p>
+          <p className="mt-1.5 text-lg leading-none font-bold tabular-nums">
+            {reached.length.toLocaleString()}
+            <span className="text-muted-foreground text-xs font-semibold">
+              {" "}/ {plan.target.toLocaleString()} reached
+            </span>
+          </p>
+          <div className="bg-secondary mt-2.5 h-2 w-full overflow-hidden rounded-full">
+            <div
+              className="bg-primary h-full rounded-full"
+              style={{ width: `${Math.min(Math.round((reached.length / plan.target) * 100), 100)}%` }}
+            />
+          </div>
+        </div>
+        <span className="text-primary text-2xl leading-none font-bold tabular-nums">
+          {Math.min(Math.round((reached.length / plan.target) * 100), 100)}%
+        </span>
+      </div>
+
       <StatCards stats={stats} />
 
       <CollationReportProvider

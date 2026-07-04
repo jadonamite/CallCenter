@@ -11,6 +11,7 @@ import { CallerBar } from "@/components/caller/caller-bar";
 import { CallerGateProvider } from "@/components/caller/caller-gate";
 import { getEvent } from "@/lib/events";
 import { callerRoster } from "@/lib/callers";
+import { getSession } from "@/lib/auth";
 import {
   Table,
   TableBody,
@@ -48,6 +49,8 @@ export default async function ContactsPage({
   const callerSeniorName = store.get("caller_senior_name")?.value || null;
   const inviteTemplate = store.get("invite_template")?.value || undefined;
   const roster = await callerRoster();
+  const session = await getSession();
+  const isAdmin = session?.role === "admin";
   const { contacts, rollup, originOf, colorOf, teamOf, seniorOf, plan } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
@@ -127,6 +130,7 @@ export default async function ContactsPage({
             }
             eventName={eventName}
             inviteTemplate={inviteTemplate}
+            isAdmin={isAdmin}
           />
         ))}
       </div>
@@ -205,6 +209,7 @@ export default async function ContactsPage({
                           contact={{ id: c.id, name: c.name, phone: c.phone }}
                           eventName={eventName}
                           inviteTemplate={inviteTemplate}
+                          isAdmin={isAdmin}
                         />
                       </TableCell>
                     </TableRow>

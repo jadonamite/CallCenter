@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { CallOutcome, Channel, Disposition } from "@/lib/outreach";
 import { CALL_OUTCOMES } from "@/lib/outreach";
 import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
+import { getSession } from "@/lib/auth";
 
 export interface LogOutcomeInput {
   contactId: string;
@@ -55,6 +56,33 @@ export async function logOutcome(input: LogOutcomeInput): Promise<LogOutcomeResu
     }
   }
 
+  revalidatePath("/contacts");
+  revalidatePath("/follow-ups");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export interface DeleteContactResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Admin: remove a contact (fake/invalid details) and its call history.
+ * Admin-only, and gated on a real ObjectId so the demo/stub data can't be
+ * deleted (string ids fall through as a harmless no-op).
+ */
+export async function deleteContact(id: string): Promise<DeleteContactResult> {
+  const session = await getSession();
+  if (session?.role !== "admin") return { ok: false, error: "Admins only." };
+
+  if (outreachWired() && isObjectId(id)) {
+    try {
+      await outreachFetch("/api/outreach/contacts", { method: "DELETE", body: { id } });
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
   revalidatePath("/contacts");
   revalidatePath("/follow-ups");
   revalidatePath("/");
