@@ -1,19 +1,45 @@
 import { ApiGroup, Contact, ContactOutcome, GroupNode } from "./types";
 import { ancestryMap, leafNodes } from "./groups";
 
-/** 2-week outreach sprint ahead of the event */
-export const PLAN_START = new Date("2026-07-01T00:00:00Z"); // campaign day 1
-export const PLAN_DAYS = 12; // 1–12 Jul, event on day 11 (12 Jul)
-export const PLAN_WEEKS = Math.ceil(PLAN_DAYS / 7);
-export const PLAN_TARGET = 5000; // people to reach by event day
-export const TODAY_INDEX = dayIndexOf(new Date("2026-07-04T00:00:00Z"));
-
-export function dayIndexOf(date: Date): number {
-  return Math.floor((date.getTime() - PLAN_START.getTime()) / 86_400_000);
+/**
+ * The campaign window for the active event, derived from its config — replaces
+ * the old hardcoded plan constants so the dashboard tracks whichever event is
+ * active. `start` is UTC midnight of campaignStart (keeps the existing UTC
+ * day-labelling correct); `todayIndex` is real "now" clamped into the window.
+ */
+export interface PlanWindow {
+  start: Date;
+  days: number;
+  weeks: number;
+  target: number;
+  todayIndex: number;
 }
 
-export function dateOfDay(day: number): Date {
-  return new Date(PLAN_START.getTime() + day * 86_400_000);
+export function planWindow(e: {
+  campaignStart: string;
+  campaignDays: number;
+  target: number;
+}): PlanWindow {
+  const start = new Date(`${e.campaignStart}T00:00:00Z`);
+  const days = Math.max(e.campaignDays, 1);
+  const raw = Math.floor((Date.now() - start.getTime()) / 86_400_000);
+  return {
+    start,
+    days,
+    weeks: Math.ceil(days / 7),
+    target: e.target,
+    todayIndex: Math.min(Math.max(raw, 0), days - 1),
+  };
+}
+
+/** Plan-day index of a date within a window (may fall outside 0..days; callers guard). */
+export function dayIndexIn(w: PlanWindow, date: Date): number {
+  return Math.floor((date.getTime() - w.start.getTime()) / 86_400_000);
+}
+
+/** The date at the start of a given plan day. */
+export function dateOfDayIn(w: PlanWindow, day: number): Date {
+  return new Date(w.start.getTime() + day * 86_400_000);
 }
 
 /* Deterministic PRNG so server and client render identical data */
@@ -56,13 +82,13 @@ function hashId(id: string): number {
 }
 
 /** Weekday-weighted probability a contact attempt lands on a given plan day. */
-function dayWeight(day: number, rand: () => number): number {
-  const weekday = dateOfDay(day).getUTCDay();
+function dayWeight(w: PlanWindow, day: number, rand: () => number): number {
+  const weekday = dateOfDayIn(w, day).getUTCDay();
   const base = weekday === 0 ? 0.4 : weekday === 6 ? 1.4 : 1.0; // Sat push, Sun quiet
   return base * (0.7 + rand() * 0.6);
 }
 
-export function generateContacts(roots: GroupNode[]): Contact[] {
+export function generateContacts(roots: GroupNode[], w: PlanWindow): Contact[] {
   const leaves = leafNodes(roots);
   const contacts: Contact[] = [];
 
@@ -84,10 +110,10 @@ export function generateContacts(roots: GroupNode[]): Contact[] {
         // pick a day weighted toward weekdays, within elapsed plan days
         let best = 0;
         let bestW = -1;
-        for (let d = 0; d <= TODAY_INDEX; d++) {
-          const w = dayWeight(d, rand) * rand();
-          if (w > bestW) {
-            bestW = w;
+        for (let d = 0; d <= w.todayIndex; d++) {
+          const wt = dayWeight(w, d, rand) * rand();
+          if (wt > bestW) {
+            bestW = wt;
             best = d;
           }
         }
@@ -148,9 +174,9 @@ export interface DailyPoint {
   messaged: number;
 }
 
-export function dailySeries(contacts: Contact[]): DailyPoint[] {
-  const points: DailyPoint[] = Array.from({ length: TODAY_INDEX + 1 }, (_, d) => {
-    const date = dateOfDay(d);
+export function dailySeries(contacts: Contact[], w: PlanWindow): DailyPoint[] {
+  const points: DailyPoint[] = Array.from({ length: w.todayIndex + 1 }, (_, d) => {
+    const date = dateOfDayIn(w, d);
     return {
       day: d,
       date: date.toISOString().slice(0, 10),
@@ -177,17 +203,17 @@ export interface PacePoint {
   target: number;
 }
 
-export function paceSeries(daily: DailyPoint[]): PacePoint[] {
+export function paceSeries(daily: DailyPoint[], w: PlanWindow): PacePoint[] {
   let cum = 0;
   const actualByDay = new Map(daily.map((p) => [p.day, p.called + p.messaged]));
-  return Array.from({ length: PLAN_DAYS }, (_, d) => {
-    const date = dateOfDay(d);
-    if (d <= TODAY_INDEX) cum += actualByDay.get(d) ?? 0;
+  return Array.from({ length: w.days }, (_, d) => {
+    const date = dateOfDayIn(w, d);
+    if (d <= w.todayIndex) cum += actualByDay.get(d) ?? 0;
     return {
       day: d,
       label: date.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }),
-      actual: d <= TODAY_INDEX ? cum : null,
-      target: Math.round(((d + 1) / PLAN_DAYS) * PLAN_TARGET),
+      actual: d <= w.todayIndex ? cum : null,
+      target: Math.round(((d + 1) / w.days) * w.target),
     };
   });
 }
@@ -246,9 +272,9 @@ export function groupRollup(
 }
 
 /** all follow-ups due within 3 days (or overdue), oldest first */
-export function dueFollowups(contacts: Contact[]): Contact[] {
+export function dueFollowups(contacts: Contact[], w: PlanWindow): Contact[] {
   return contacts
-    .filter((c) => c.followUpDay !== null && c.followUpDay <= TODAY_INDEX + 3)
+    .filter((c) => c.followUpDay !== null && c.followUpDay <= w.todayIndex + 3)
     .sort((a, b) => (a.followUpDay ?? 0) - (b.followUpDay ?? 0));
 }
 

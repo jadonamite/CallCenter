@@ -21,10 +21,7 @@ import {
   groupRollup,
   outcomeBreakdown,
   paceSeries,
-  PLAN_DAYS,
-  PLAN_TARGET,
-  PLAN_WEEKS,
-  TODAY_INDEX,
+  planWindow,
 } from "@/lib/data";
 import { loadContacts } from "@/lib/live-data";
 
@@ -68,10 +65,11 @@ export default async function DashboardPage() {
 
   const groups = await getGroups();
   const roots = buildTree(groups);
+  const plan = planWindow(activeEvent);
   const contacts = await loadContacts(roots);
 
-  const daily = dailySeries(contacts);
-  const pace = paceSeries(daily);
+  const daily = dailySeries(contacts, plan);
+  const pace = paceSeries(daily, plan);
   const rollup = groupRollup(groups, roots, contacts);
   const outcomes = outcomeBreakdown(contacts);
   const teamColorOf = teamColorMap(groups);
@@ -81,11 +79,11 @@ export default async function DashboardPage() {
   const answered = reached.filter((c) => c.outcome === "answered");
   const messagedNotCalled = reached.filter((c) => c.channel === "message");
   const followupsDue = contacts.filter(
-    (c) => c.followUpDay !== null && c.followUpDay <= TODAY_INDEX
+    (c) => c.followUpDay !== null && c.followUpDay <= plan.todayIndex
   );
 
-  const week = Math.min(Math.floor(TODAY_INDEX / 7) + 1, PLAN_WEEKS);
-  const targetToDate = Math.round(((TODAY_INDEX + 1) / PLAN_DAYS) * PLAN_TARGET);
+  const week = Math.min(Math.floor(plan.todayIndex / 7) + 1, plan.weeks);
+  const targetToDate = Math.round(((plan.todayIndex + 1) / plan.days) * plan.target);
   const paceDelta = reached.length - targetToDate;
 
   // sparklines: the last 7 days of activity
@@ -150,7 +148,7 @@ export default async function DashboardPage() {
     .sort((a, b) => b.total - a.total)
     .map((t) => ({ id: t.id, name: t.name, total: t.total, color: teamColorOf[t.id] }));
 
-  const due = dueFollowups(contacts);
+  const due = dueFollowups(contacts, plan);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -158,10 +156,10 @@ export default async function DashboardPage() {
         adminName={adminName}
         eventName={activeEvent.name}
         week={week}
-        totalWeeks={PLAN_WEEKS}
+        totalWeeks={plan.weeks}
         contacts={contacts.length}
         teams={roots.length}
-        target={PLAN_TARGET}
+        target={plan.target}
       />
 
       <StatCards stats={stats} />
@@ -176,7 +174,7 @@ export default async function DashboardPage() {
       >
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">
-            <OutreachChart daily={daily} pace={pace} planWeeks={PLAN_WEEKS} />
+            <OutreachChart daily={daily} pace={pace} planWeeks={plan.weeks} />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
             <TeamDonut teams={teamSlices} outcomes={outcomes} />
@@ -196,6 +194,7 @@ export default async function DashboardPage() {
         rows={due.slice(0, 10)}
         originOf={originOf}
         colorOf={colorOf}
+        plan={plan}
         subtitle={`${due.length} due or overdue — showing the 10 oldest`}
         viewAllHref="/follow-ups"
       />

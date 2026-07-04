@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { dateOfDay } from "@/lib/data";
+import { dateOfDayIn } from "@/lib/data";
 import { loadAppData } from "@/lib/page-data";
 
 export const metadata = { title: "Contacts · Outreach Call Center" };
@@ -48,7 +48,7 @@ export default async function ContactsPage({
   const callerSeniorName = store.get("caller_senior_name")?.value || null;
   const inviteTemplate = store.get("invite_template")?.value || undefined;
   const roster = await callerRoster();
-  const { contacts, rollup, originOf, colorOf, teamOf, seniorOf } = await loadAppData();
+  const { contacts, rollup, originOf, colorOf, teamOf, seniorOf, plan } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
     .map((t) => ({ id: t.id, name: t.name }));
@@ -118,7 +118,7 @@ export default async function ContactsPage({
             outcome={c.outcome}
             lastContact={
               c.contactedDay !== null
-                ? dateOfDay(c.contactedDay).toLocaleDateString("en-GB", {
+                ? dateOfDayIn(plan, c.contactedDay).toLocaleDateString("en-GB", {
                     day: "numeric",
                     month: "short",
                     timeZone: "UTC",
@@ -193,7 +193,7 @@ export default async function ContactsPage({
                       </TableCell>
                       <TableCell className="text-muted-foreground tabular-nums">
                         {c.contactedDay !== null
-                          ? dateOfDay(c.contactedDay).toLocaleDateString("en-GB", {
+                          ? dateOfDayIn(plan, c.contactedDay).toLocaleDateString("en-GB", {
                               day: "numeric",
                               month: "short",
                               timeZone: "UTC",

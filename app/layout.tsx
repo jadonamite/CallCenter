@@ -4,8 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Sidebar } from "@/components/shell/sidebar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { buildTree, getGroups } from "@/lib/groups";
-import { PLAN_DAYS, PLAN_TARGET, TODAY_INDEX } from "@/lib/data";
-import { loadContacts } from "@/lib/live-data";
+import { loadContacts, activePlanWindow } from "@/lib/live-data";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -29,9 +28,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const groups = await getGroups();
+  const plan = await activePlanWindow();
   const contacts = await loadContacts(buildTree(groups));
   const reached = contacts.filter((c) => c.contactedDay !== null).length;
-  const daysLeft = Math.max(PLAN_DAYS - TODAY_INDEX - 1, 0);
+  const daysLeft = Math.max(plan.days - plan.todayIndex - 1, 0);
 
   return (
     <html
@@ -41,7 +41,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <Sidebar reached={reached} target={PLAN_TARGET} daysLeft={daysLeft} />
+          <Sidebar reached={reached} target={plan.target} daysLeft={daysLeft} />
           <div className="flex-1 pb-24 md:pb-0 md:pl-16 lg:pl-60">{children}</div>
           <BottomNav />
         </ThemeProvider>

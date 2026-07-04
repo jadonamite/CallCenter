@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
-import { dateOfDay, TODAY_INDEX } from "@/lib/data";
+import { dateOfDayIn, type PlanWindow } from "@/lib/data";
 import type { Contact } from "@/lib/types";
 
 interface Props {
@@ -17,14 +17,16 @@ interface Props {
   originOf: Record<string, string>;
   /** group id → its team's css color */
   colorOf: Record<string, string>;
+  /** active event's campaign window (day labelling + overdue) */
+  plan: PlanWindow;
   title?: string;
   subtitle?: string;
   /** show a "view all" link (dashboard preview mode) */
   viewAllHref?: string;
 }
 
-function fmt(day: number) {
-  return dateOfDay(day).toLocaleDateString("en-GB", {
+function fmt(plan: PlanWindow, day: number) {
+  return dateOfDayIn(plan, day).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
@@ -35,6 +37,7 @@ export function FollowupTable({
   rows,
   originOf,
   colorOf,
+  plan,
   title = "Follow-up queue",
   subtitle,
   viewAllHref,
@@ -80,7 +83,7 @@ export function FollowupTable({
                 </TableRow>
               )}
               {rows.map((c) => {
-                const overdue = (c.followUpDay ?? 0) < TODAY_INDEX;
+                const overdue = (c.followUpDay ?? 0) < plan.todayIndex;
                 const color = colorOf[c.groupId];
                 return (
                   <TableRow key={c.id} className="border-border/60">
@@ -103,14 +106,14 @@ export function FollowupTable({
                       {c.broughtBy}
                     </TableCell>
                     <TableCell className="text-muted-foreground tabular-nums">
-                      {c.contactedDay !== null ? fmt(c.contactedDay) : "—"}
+                      {c.contactedDay !== null ? fmt(plan, c.contactedDay) : "—"}
                     </TableCell>
                     <TableCell>
                       <StatusBadge outcome={c.outcome} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       <span className={overdue ? "text-destructive font-semibold" : ""}>
-                        {c.followUpDay !== null ? fmt(c.followUpDay) : "—"}
+                        {c.followUpDay !== null ? fmt(plan, c.followUpDay) : "—"}
                         {overdue && " · overdue"}
                       </span>
                     </TableCell>

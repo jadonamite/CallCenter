@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shell/page-header";
 import { FollowupTable } from "@/components/dashboard/followup-table";
 import { ListFilters } from "@/components/filters/list-filters";
 import { Pagination } from "@/components/filters/pagination";
-import { dueFollowups, TODAY_INDEX } from "@/lib/data";
+import { dueFollowups } from "@/lib/data";
 import { loadAppData } from "@/lib/page-data";
 
 export const metadata = { title: "Follow-ups · Outreach Call Center" };
@@ -24,16 +24,16 @@ export default async function FollowupsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  const { contacts, rollup, originOf, colorOf, teamOf } = await loadAppData();
+  const { contacts, rollup, originOf, colorOf, teamOf, plan } = await loadAppData();
   const teams = rollup
     .filter((r) => r.level === "TEAM")
     .map((t) => ({ id: t.id, name: t.name }));
 
-  let rows = dueFollowups(contacts);
+  let rows = dueFollowups(contacts, plan);
   const status = sp.status ?? "all";
-  if (status === "overdue") rows = rows.filter((c) => (c.followUpDay ?? 0) < TODAY_INDEX);
-  if (status === "today") rows = rows.filter((c) => c.followUpDay === TODAY_INDEX);
-  if (status === "upcoming") rows = rows.filter((c) => (c.followUpDay ?? 0) > TODAY_INDEX);
+  if (status === "overdue") rows = rows.filter((c) => (c.followUpDay ?? 0) < plan.todayIndex);
+  if (status === "today") rows = rows.filter((c) => c.followUpDay === plan.todayIndex);
+  if (status === "upcoming") rows = rows.filter((c) => (c.followUpDay ?? 0) > plan.todayIndex);
   if (sp.team) rows = rows.filter((c) => teamOf[c.groupId] === sp.team);
   if (sp.q) {
     const q = sp.q.toLowerCase();
@@ -67,6 +67,7 @@ export default async function FollowupsPage({
         rows={pageRows}
         originOf={originOf}
         colorOf={colorOf}
+        plan={plan}
         title="Queue"
         subtitle="Oldest due date first"
       />

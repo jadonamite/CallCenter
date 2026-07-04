@@ -1,12 +1,13 @@
 import { ancestryMap, buildTree, getGroups } from "./groups";
 import { teamColorMap } from "./team-colors";
 import { groupRollup } from "./data";
-import { loadContacts } from "./live-data";
+import { loadContacts, activePlanWindow } from "./live-data";
 
 /** Shared server-side assembly used by every page. */
 export async function loadAppData() {
   const groups = await getGroups();
   const roots = buildTree(groups);
+  const plan = await activePlanWindow();
   const contacts = await loadContacts(roots);
   const rollup = groupRollup(groups, roots, contacts);
   const teamColorOf = teamColorMap(groups);
@@ -26,5 +27,5 @@ export async function loadAppData() {
     seniorOf[id] = chain.find((g) => g.level === "SENIOR_CELL")?._id ?? "";
   }
 
-  return { groups, roots, contacts, rollup, teamColorOf, originOf, colorOf, teamOf, seniorOf };
+  return { groups, roots, contacts, rollup, teamColorOf, originOf, colorOf, teamOf, seniorOf, plan };
 }

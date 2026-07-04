@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { outreachWired } from "./outreach-api";
 import { getEvent } from "./events";
-import { generateContacts, dayIndexOf } from "./data";
+import { generateContacts, dayIndexIn, planWindow, type PlanWindow } from "./data";
 import type { Contact, ContactOutcome, GroupNode } from "./types";
 
 /**
@@ -58,10 +58,16 @@ export async function resolveActiveEventId(): Promise<string | null> {
   return events?.find((e) => e.name === active.name)?.id ?? null;
 }
 
+/** The active event's campaign window (from the static event config). */
+export async function activePlanWindow(): Promise<PlanWindow> {
+  const store = await cookies();
+  return planWindow(getEvent(store.get("active_event")?.value));
+}
+
 /** Map a persisted contact + its logs to the dashboard Contact shape. */
-function toContact(c: LiveContact, logs: LiveLog[]): Contact {
+function toContact(c: LiveContact, logs: LiveLog[], w: PlanWindow): Contact {
   const latest = [...logs].sort((a, b) => a.at.localeCompare(b.at)).at(-1);
-  const contactedDay = latest ? dayIndexOf(new Date(latest.at)) : null;
+  const contactedDay = latest ? dayIndexIn(w, new Date(latest.at)) : null;
 
   let outcome: ContactOutcome = "not_contacted";
   if (logs.some((l) => l.outcome === "answered")) outcome = "answered";
@@ -79,7 +85,7 @@ function toContact(c: LiveContact, logs: LiveLog[]): Contact {
     channel: latest ? latest.channel : null,
     outcome,
     attempts: c.attempts ?? logs.length,
-    followUpDay: c.nextFollowUp ? dayIndexOf(new Date(c.nextFollowUp)) : null,
+    followUpDay: c.nextFollowUp ? dayIndexIn(w, new Date(c.nextFollowUp)) : null,
   };
 }
 
@@ -88,7 +94,8 @@ function toContact(c: LiveContact, logs: LiveLog[]): Contact {
  * contacts are collated); the deterministic dummy set otherwise.
  */
 export async function loadContacts(roots: GroupNode[]): Promise<Contact[]> {
-  if (!outreachWired()) return generateContacts(roots);
+  const w = await activePlanWindow();
+  if (!outreachWired()) return generateContacts(roots, w);
 
   const eventId = await resolveActiveEventId();
   if (!eventId) return [];
@@ -105,5 +112,5 @@ export async function loadContacts(roots: GroupNode[]): Promise<Contact[]> {
     arr.push(l);
     byContact.set(l.contactId, arr);
   }
-  return contacts.map((c) => toContact(c, byContact.get(c.id) ?? []));
+  return contacts.map((c) => toContact(c, byContact.get(c.id) ?? [], w));
 }

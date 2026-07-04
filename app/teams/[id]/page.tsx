@@ -14,7 +14,7 @@ export default async function TeamPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { rollup, contacts, teamColorOf, originOf, colorOf, teamOf } =
+  const { rollup, contacts, teamColorOf, originOf, colorOf, teamOf, plan } =
     await loadAppData();
 
   const team = rollup.find((r) => r.id === id && r.level === "TEAM");
@@ -30,8 +30,8 @@ export default async function TeamPage({
   const block = rollup.slice(start, end);
 
   const teamContacts = contacts.filter((c) => teamOf[c.groupId] === team.id);
-  const teamDaily = dailySeries(teamContacts);
-  const teamDue = dueFollowups(teamContacts);
+  const teamDaily = dailySeries(teamContacts, plan);
+  const teamDue = dueFollowups(teamContacts, plan);
 
   const tiles = [
     { label: "Collated", value: team.total },
@@ -85,6 +85,7 @@ export default async function TeamPage({
         rows={teamDue.slice(0, 15)}
         originOf={originOf}
         colorOf={colorOf}
+        plan={plan}
         subtitle={`${teamDue.length} due in this team — showing the 15 oldest`}
         viewAllHref={`/follow-ups?team=${team.id}`}
       />
