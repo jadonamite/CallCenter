@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { Icon } from "@/components/icons";
 import { PageHeader } from "@/components/shell/page-header";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
 import { loadAppData } from "@/lib/page-data";
-import { ArrowUpRight } from "lucide-react";
 
 export const metadata = { title: "Teams · Outreach Call Center" };
 
@@ -44,7 +44,7 @@ export default async function TeamsPage() {
                     #{i + 1}
                   </span>
                 </span>
-                <ArrowUpRight className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <Icon name="arrow-up-right" className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </div>
               <div className="mt-4 flex items-end justify-between">
                 <div>

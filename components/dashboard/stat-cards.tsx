@@ -1,11 +1,9 @@
-import {
-  PhoneCall,
-  MessageSquare,
-  Users,
-  PhoneOutgoing,
-  CalendarClock,
-} from "lucide-react";
+"use client";
+
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Icon, type IconName } from "@/components/icons";
+import { fadeInUp, staggerContainer, spring } from "@/lib/motion";
 
 export interface Stat {
   label: string;
@@ -20,12 +18,12 @@ export interface Stat {
   trend?: "up" | "down";
 }
 
-const ICONS = {
-  reached: Users,
-  called: PhoneCall,
-  messaged: MessageSquare,
-  connect: PhoneOutgoing,
-  followup: CalendarClock,
+const ICONS: Record<Stat["icon"], IconName> = {
+  reached: "teams",
+  called: "call",
+  messaged: "message",
+  connect: "phone-outgoing",
+  followup: "followups",
 };
 
 function Sparkline({ data, hero }: { data: number[]; hero?: boolean }) {
@@ -33,14 +31,16 @@ function Sparkline({ data, hero }: { data: number[]; hero?: boolean }) {
   return (
     <div className="flex h-8 items-end gap-1" aria-hidden>
       {data.map((v, i) => (
-        <div
+        <motion.div
           key={i}
+          initial={{ height: 0 }}
+          animate={{ height: `${Math.max((v / max) * 100, 12)}%` }}
+          transition={{ ...spring, delay: 0.15 + i * 0.03 }}
           className={cn(
             "w-1.5 rounded-full",
             hero ? "bg-white/45" : "bg-primary/25",
             i === data.length - 1 && (hero ? "bg-white" : "bg-primary")
           )}
-          style={{ height: `${Math.max((v / max) * 100, 12)}%` }}
         />
       ))}
     </div>
@@ -49,12 +49,17 @@ function Sparkline({ data, hero }: { data: number[]; hero?: boolean }) {
 
 export function StatCards({ stats }: { stats: Stat[] }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <motion.div
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-2 gap-4 lg:grid-cols-5"
+    >
       {stats.map((s) => {
-        const Icon = ICONS[s.icon];
         return (
-          <div
+          <motion.div
             key={s.label}
+            variants={fadeInUp}
             className={cn(
               "card-soft rounded-3xl p-5",
               s.hero
@@ -69,7 +74,7 @@ export function StatCards({ stats }: { stats: Stat[] }) {
                   s.hero ? "bg-white/20" : "bg-accent text-accent-foreground"
                 )}
               >
-                <Icon className="size-4" />
+                <Icon name={ICONS[s.icon]} className="size-4" />
               </span>
               {s.spark && <Sparkline data={s.spark} hero={s.hero} />}
             </div>
@@ -94,9 +99,9 @@ export function StatCards({ stats }: { stats: Stat[] }) {
             >
               {s.label}
             </p>
-          </div>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

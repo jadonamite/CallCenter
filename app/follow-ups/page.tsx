@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquareText } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { PageHeader } from "@/components/shell/page-header";
 import { FollowupTable } from "@/components/dashboard/followup-table";
 import { ListFilters } from "@/components/filters/list-filters";
@@ -59,7 +59,7 @@ export default async function FollowupsPage({
           href="/messages"
           className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold"
         >
-          <MessageSquareText className="size-3.5" /> Send SMS
+          <Icon name="sms" className="size-3.5" /> Send SMS
         </Link>
       </PageHeader>
       <ListFilters tabs={TABS} teams={teams} />

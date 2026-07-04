@@ -1,18 +1,12 @@
-import {
-  BookUser,
-  CalendarClock,
-  CalendarDays,
-  LayoutDashboard,
-  Users,
-} from "lucide-react";
+import type { IconName } from "@/components/icons";
 
-export const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/teams", label: "Teams", icon: Users },
-  { href: "/follow-ups", label: "Follow-ups", icon: CalendarClock },
-  { href: "/contacts", label: "Contacts", icon: BookUser },
-  { href: "/events", label: "Events", icon: CalendarDays },
-] as const;
+export const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "Dashboard", icon: "dashboard" },
+  { href: "/teams", label: "Teams", icon: "teams" },
+  { href: "/follow-ups", label: "Follow-ups", icon: "followups" },
+  { href: "/contacts", label: "Contacts", icon: "contacts" },
+  { href: "/events", label: "Events", icon: "events" },
+];
 
 export function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);

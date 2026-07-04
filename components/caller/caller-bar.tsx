@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { UserRound, Loader2, XCircle } from "lucide-react";
+import { Icon, Spinner } from "@/components/icons";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,7 @@ export function CallerBar({
 
   return (
     <div className="flex items-center gap-2 text-xs">
-      <UserRound className="text-muted-foreground size-3.5" />
+      <Icon name="user" className="text-muted-foreground size-3.5" />
       {callerName ? (
         <>
           <span className="text-muted-foreground">
@@ -122,7 +122,7 @@ export function CallerBar({
           <div className="flex items-center justify-between gap-3">
             {error ? (
               <span className="text-destructive flex items-center gap-1.5 font-semibold">
-                <XCircle className="size-4" /> {error}
+                <Icon name="error" className="size-4" /> {error}
               </span>
             ) : (
               <span />
@@ -133,7 +133,7 @@ export function CallerBar({
               disabled={!callerId || pin.length !== 4 || pending}
               className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
             >
-              {pending && <Loader2 className="size-3.5 animate-spin" />}
+              {pending && <Spinner className="size-3.5 animate-spin" />}
               {pending ? "Checking…" : "Confirm"}
             </button>
           </div>

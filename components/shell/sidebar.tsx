@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PhoneCall, Settings } from "lucide-react";
+import { motion } from "framer-motion";
+import { Icon, PhoneSolidIcon } from "@/components/icons";
+import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
 
@@ -20,7 +22,7 @@ export function Sidebar({ reached, target, daysLeft }: Props) {
     <aside className="bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-40 hidden w-16 flex-col border-r md:flex lg:w-60">
       <Link href="/" className="flex items-center gap-2.5 px-4 pt-6 lg:px-6">
         <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-xl">
-          <PhoneCall className="size-4" />
+          <PhoneSolidIcon className="size-4" />
         </span>
         <span className="hidden text-[15px] font-bold tracking-tight lg:block">
           CallCenter
@@ -35,13 +37,20 @@ export function Sidebar({ reached, target, daysLeft }: Props) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                "relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground"
+                  ? "text-primary-foreground"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
-              <item.icon className="size-4.5 shrink-0" />
+              {active && (
+                <motion.span
+                  layoutId="nav-active"
+                  transition={spring}
+                  className="bg-primary absolute inset-0 -z-10 rounded-2xl"
+                />
+              )}
+              <Icon name={item.icon} className="size-5 shrink-0" />
               <span className="hidden lg:block">{item.label}</span>
             </Link>
           );
@@ -58,7 +67,7 @@ export function Sidebar({ reached, target, daysLeft }: Props) {
               : "text-muted-foreground hover:bg-secondary hover:text-foreground"
           )}
         >
-          <Settings className="size-4.5 shrink-0" />
+          <Icon name="settings" className="size-5 shrink-0" />
           <span className="hidden lg:block">Settings</span>
         </Link>
       </div>

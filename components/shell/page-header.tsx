@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Props {
@@ -24,7 +24,7 @@ export function PageHeader({ title, subtitle, children }: Props) {
           aria-label="Settings"
           className="glass-pill text-muted-foreground hover:text-foreground flex size-10 items-center justify-center transition-colors md:hidden"
         >
-          <Settings className="size-4.5" />
+          <Icon name="settings" className="size-5" />
         </Link>
         <ThemeToggle />
       </div>

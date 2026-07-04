@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Loader2, XCircle } from "lucide-react";
+import { Icon, Spinner } from "@/components/icons";
 import {
   Dialog,
   DialogContent,
@@ -89,7 +89,7 @@ export function EventFormDialog({
           onClick={() => setOpen(true)}
           className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold"
         >
-          <Plus className="size-3.5" /> New event
+          <Icon name="add" className="size-3.5" /> New event
         </button>
       ) : (
         <button
@@ -97,7 +97,7 @@ export function EventFormDialog({
           onClick={() => setOpen(true)}
           className="bg-secondary text-secondary-foreground hover:bg-secondary/70 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
         >
-          <Pencil className="size-3.5" /> Edit
+          <Icon name="edit" className="size-3.5" /> Edit
         </button>
       )}
 
@@ -192,7 +192,7 @@ export function EventFormDialog({
           <div className="flex items-center justify-between gap-3">
             {error ? (
               <span className="text-destructive flex items-center gap-1.5 text-xs font-semibold">
-                <XCircle className="size-4" /> {error}
+                <Icon name="error" className="size-4" /> {error}
               </span>
             ) : (
               <span />
@@ -203,7 +203,7 @@ export function EventFormDialog({
               disabled={pending}
               className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
             >
-              {pending && <Loader2 className="size-3.5 animate-spin" />}
+              {pending && <Spinner className="size-3.5 animate-spin" />}
               {pending ? "Saving…" : mode === "add" ? "Create event" : "Save changes"}
             </button>
           </div>

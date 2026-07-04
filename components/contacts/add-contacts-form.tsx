@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Icon, Spinner } from "@/components/icons";
 import {
   Select,
   SelectContent,
@@ -170,9 +170,9 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
             {rows.map((r, i) => (
               <li key={i} className="flex items-center gap-2.5 text-sm">
                 {r.valid ? (
-                  <CheckCircle2 className="size-4 shrink-0 text-[var(--team-2)]" />
+                  <Icon name="success" className="size-4 shrink-0 text-[var(--team-2)]" />
                 ) : (
-                  <XCircle className="text-destructive size-4 shrink-0" />
+                  <Icon name="error" className="text-destructive size-4 shrink-0" />
                 )}
                 <span className="font-medium">{r.name || "—"}</span>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -199,7 +199,7 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
             disabled={!ready || pending}
             className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
           >
-            {pending && <Loader2 className="size-3.5 animate-spin" />}
+            {pending && <Spinner className="size-3.5 animate-spin" />}
             {pending
               ? "Saving…"
               : `Save ${valid.length > 0 ? `${valid.length} contact${valid.length === 1 ? "" : "s"}` : "contacts"}`}
@@ -208,13 +208,13 @@ export function AddContactsForm({ tree }: { tree: GroupNode[] }) {
 
         {result?.ok ? (
           <p className="flex items-center gap-2 text-[11px] font-semibold text-[var(--team-2)]">
-            <CheckCircle2 className="size-4 shrink-0" />
+            <Icon name="success" className="size-4 shrink-0" />
             Saved {result.saved} contact{result.saved === 1 ? "" : "s"}
             {result.skipped > 0 && <> · {result.skipped} skipped (duplicate/invalid)</>}
           </p>
         ) : result?.error ? (
           <p className="text-destructive flex items-center gap-2 text-[11px] font-semibold">
-            <XCircle className="size-4 shrink-0" />
+            <Icon name="error" className="size-4 shrink-0" />
             {result.error}
           </p>
         ) : (

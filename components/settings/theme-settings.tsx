@@ -1,14 +1,14 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { Icon, type IconName } from "@/components/icons";
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const OPTIONS = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-] as const;
+const OPTIONS: { value: string; label: string; icon: IconName }[] = [
+  { value: "light", label: "Light", icon: "sun" },
+  { value: "dark", label: "Dark", icon: "moon" },
+];
 
 export function ThemeSettings() {
   const { theme, setTheme } = useTheme();
@@ -31,7 +31,7 @@ export function ThemeSettings() {
                 : "border-border text-muted-foreground hover:text-foreground"
             )}
           >
-            <o.icon className="size-4" />
+            <Icon name={o.icon} className="size-4" />
             {o.label}
           </button>
         );

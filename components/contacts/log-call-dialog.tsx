@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Loader2, CheckCircle2, XCircle, ChevronLeft } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Icon, Spinner } from "@/components/icons";
 import { WhatsappIcon, PhoneSolidIcon } from "@/components/icons/brand";
+import { stepVariants, spring } from "@/lib/motion";
 import {
   Dialog,
   DialogContent,
@@ -194,7 +196,7 @@ export function LogCallDialog({
                 aria-label="Back"
                 className="text-muted-foreground hover:text-foreground -ml-1"
               >
-                <ChevronLeft className="size-5" />
+                <Icon name="chevron-left" className="size-5" />
               </button>
             )}
             {contact.name}
@@ -204,11 +206,16 @@ export function LogCallDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <AnimatePresence mode="wait" initial={false}>
         {/* STEP 1 — reach out */}
         {step === "reach" && (
-          <div
+          <motion.div
             key="reach"
-            className="animate-in fade-in-0 zoom-in-95 flex items-start justify-center gap-8 py-6"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="flex items-start justify-center gap-8 py-6"
           >
             <button
               type="button"
@@ -230,12 +237,19 @@ export function LogCallDialog({
               </span>
               <span className="text-sm font-bold">WhatsApp</span>
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* STEP 2 — what happened (call) */}
         {step === "outcome" && (
-          <div key="outcome" className="animate-in fade-in-0 slide-in-from-right-3 space-y-3">
+          <motion.div
+            key="outcome"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="space-y-3"
+          >
             <p className="text-sm font-bold">
               {backFromApp ? "How did the call go?" : "What happened?"}
             </p>
@@ -253,15 +267,22 @@ export function LogCallDialog({
             </div>
             {pending && (
               <p className="text-muted-foreground flex items-center gap-2 text-xs">
-                <Loader2 className="size-3.5 animate-spin" /> Saving…
+                <Spinner className="size-3.5" /> Saving…
               </p>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* STEP 3 — response (answered call OR whatsapp) */}
         {step === "response" && (
-          <div key="response" className="animate-in fade-in-0 slide-in-from-right-3 space-y-3">
+          <motion.div
+            key="response"
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="space-y-3"
+          >
             <p className="text-sm font-bold">
               {channel === "message" ? "Any reply yet?" : "Are they coming?"}
             </p>
@@ -303,7 +324,7 @@ export function LogCallDialog({
             <div className="flex items-center justify-between gap-3">
               {result?.error ? (
                 <span className="text-destructive flex items-center gap-1.5 text-xs font-semibold">
-                  <XCircle className="size-4" /> {result.error}
+                  <Icon name="error" className="size-4" /> {result.error}
                 </span>
               ) : (
                 <span />
@@ -314,23 +335,32 @@ export function LogCallDialog({
                 disabled={pending || (disposition === "call_back_later" && !callBackAt)}
                 className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
               >
-                {pending && <Loader2 className="size-3.5 animate-spin" />}
+                {pending && <Spinner className="size-3.5" />}
                 {pending ? "Saving…" : "Save log"}
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* saved confirmation */}
         {step === "saved" && (
-          <div
+          <motion.div
             key="saved"
-            className="animate-in fade-in-0 zoom-in-95 flex flex-col items-center gap-2 py-6 text-[var(--team-2)]"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1, transition: spring }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center gap-2 py-6 text-[var(--team-2)]"
           >
-            <CheckCircle2 className="size-10" />
+            <motion.span
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0, transition: { ...spring, delay: 0.05 } }}
+            >
+              <Icon name="success" className="size-10" />
+            </motion.span>
             <span className="text-sm font-bold">Logged</span>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

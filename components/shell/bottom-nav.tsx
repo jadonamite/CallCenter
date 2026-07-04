@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+import { Icon } from "@/components/icons";
+import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
 
@@ -17,12 +20,24 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-bold",
+                "relative flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-bold transition-colors",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <item.icon className="size-5" />
+              <motion.span
+                animate={{ scale: active ? 1.08 : 1, y: active ? -1 : 0 }}
+                transition={spring}
+              >
+                <Icon name={item.icon} className="size-5" />
+              </motion.span>
               {item.label}
+              {active && (
+                <motion.span
+                  layoutId="tab-active"
+                  transition={spring}
+                  className="bg-primary absolute -top-0.5 h-1 w-6 rounded-full"
+                />
+              )}
             </Link>
           );
         })}

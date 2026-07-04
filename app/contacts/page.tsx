@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { Icon } from "@/components/icons";
 import { cookies } from "next/headers";
-import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shell/page-header";
 import { ListFilters } from "@/components/filters/list-filters";
 import { Pagination } from "@/components/filters/pagination";
@@ -77,7 +77,7 @@ export default async function ContactsPage({
           href="/contacts/new"
           className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold"
         >
-          <Plus className="size-3.5" /> Add contacts
+          <Icon name="add" className="size-3.5" /> Add contacts
         </Link>
       </PageHeader>
 
@@ -93,9 +93,10 @@ export default async function ContactsPage({
             No contacts match these filters.
           </p>
         )}
-        {pageRows.map((c) => (
+        {pageRows.map((c, i) => (
           <ContactCard
             key={c.id}
+            index={i}
             contact={{ id: c.id, name: c.name, phone: c.phone, broughtBy: c.broughtBy }}
             origin={originOf[c.groupId] ?? "—"}
             color={colorOf[c.groupId]}

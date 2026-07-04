@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { PhoneSolidIcon } from "@/components/icons/brand";
+import { spring } from "@/lib/motion";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { LogCallDialog } from "./log-call-dialog";
 import type { Contact } from "@/lib/types";
@@ -18,6 +20,7 @@ export function ContactCard({
   lastContact,
   eventName,
   inviteTemplate,
+  index = 0,
 }: {
   contact: { id: string; name: string; phone: string; broughtBy: string };
   origin: string;
@@ -26,13 +29,18 @@ export function ContactCard({
   lastContact: string;
   eventName: string;
   inviteTemplate?: string;
+  index?: number;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
+      <motion.button
         type="button"
         onClick={() => setOpen(true)}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...spring, delay: Math.min(index, 12) * 0.035 }}
+        whileTap={{ scale: 0.98 }}
         className="card-soft bg-card active:bg-secondary/40 flex w-full items-center gap-3 rounded-2xl p-3.5 text-left transition-colors"
       >
         <div className="min-w-0 flex-1 space-y-1.5">
@@ -59,7 +67,7 @@ export function ContactCard({
         <span className="bg-primary text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full">
           <PhoneSolidIcon className="size-5" />
         </span>
-      </button>
+      </motion.button>
 
       <LogCallDialog
         open={open}

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
+import { Icon } from "@/components/icons";
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { PageHeader } from "@/components/shell/page-header";
 import { fmtEventDay, getEvent, LIVE_EVENT_ID } from "@/lib/events";
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         <PageHeader title={`Hello, ${adminName} 👋`} subtitle={activeEvent.name} />
         <div className="card-soft bg-card flex flex-col items-center gap-3 rounded-3xl px-6 py-16 text-center">
           <span className="bg-accent text-accent-foreground flex size-12 items-center justify-center rounded-2xl">
-            <CalendarDays className="size-5" />
+            <Icon name="events" className="size-5" />
           </span>
           <h2 className="text-lg font-bold">{activeEvent.name}</h2>
           <p className="text-muted-foreground max-w-md text-sm">

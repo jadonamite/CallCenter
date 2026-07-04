@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Send, Loader2, CheckCircle2, XCircle, TriangleAlert } from "lucide-react";
+import { Icon, Spinner } from "@/components/icons";
 import {
   Select,
   SelectContent,
@@ -265,13 +265,13 @@ export function BroadcastComposer({
 
         {route === "generic" ? (
           <p className="flex items-start gap-2 text-xs font-medium text-[var(--team-5)]">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            <Icon name="warning" className="mt-0.5 size-4 shrink-0" />
             Generic route won&apos;t deliver to numbers on DND (most personal lines) and
             can&apos;t send to MTN 8PM–8AM. Fine for tests only.
           </p>
         ) : (
           <p className="flex items-start gap-2 text-xs font-medium text-[var(--team-5)]">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            <Icon name="warning" className="mt-0.5 size-4 shrink-0" />
             DND route needs a registered alphanumeric Sender ID (church name) approved
             with {meta.label} before real sends.
           </p>
@@ -293,7 +293,7 @@ export function BroadcastComposer({
             disabled={pending || selected.length === 0 || template.trim().length < 5}
             className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:opacity-40"
           >
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            {pending ? <Spinner className="size-3.5 animate-spin" /> : <Icon name="send" className="size-3.5" />}
             {pending ? "Sending…" : `Send to ${selected.length.toLocaleString()}`}
           </button>
         </div>
@@ -304,7 +304,7 @@ export function BroadcastComposer({
               result.ok ? "text-[var(--team-2)]" : "text-destructive"
             }`}
           >
-            {result.ok ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+            {result.ok ? <Icon name="success" className="size-4" /> : <Icon name="error" className="size-4" />}
             {result.text}
           </p>
         )}

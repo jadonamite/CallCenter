@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@/components/icons";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -160,7 +160,7 @@ export function Leaderboard({
                       )}
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          <ChevronRight
+                          <Icon name="chevron-right"
                             className={cn(
                               "text-muted-foreground size-4 shrink-0 transition-transform",
                               teamOpen && "rotate-90"
@@ -208,7 +208,7 @@ export function Leaderboard({
                               <TableCell>
                                 <div className="flex items-center gap-2.5" style={{ paddingLeft: "20px" }}>
                                   {cells.length > 0 ? (
-                                    <ChevronRight
+                                    <Icon name="chevron-right"
                                       className={cn(
                                         "text-muted-foreground size-3.5 shrink-0 transition-transform",
                                         seniorOpen && "rotate-90"

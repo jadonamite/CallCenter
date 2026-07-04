@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { CalendarDays, Clock, Target, UserRound } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { PageHeader } from "@/components/shell/page-header";
 import { Badge } from "@/components/ui/badge";
 import { EVENTS, fmtEventDay, LIVE_EVENT_ID } from "@/lib/events";
@@ -81,7 +81,7 @@ export default async function EventsPage() {
 
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div className="flex items-center gap-2.5">
-                  <CalendarDays className="text-muted-foreground size-4 shrink-0" />
+                  <Icon name="events" className="text-muted-foreground size-4 shrink-0" />
                   <div>
                     <dt className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                       Event day
@@ -90,7 +90,7 @@ export default async function EventsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Clock className="text-muted-foreground size-4 shrink-0" />
+                  <Icon name="clock" className="text-muted-foreground size-4 shrink-0" />
                   <div>
                     <dt className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                       Time
@@ -99,7 +99,7 @@ export default async function EventsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Target className="text-muted-foreground size-4 shrink-0" />
+                  <Icon name="target" className="text-muted-foreground size-4 shrink-0" />
                   <div>
                     <dt className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                       Reach target
@@ -110,7 +110,7 @@ export default async function EventsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <UserRound className="text-muted-foreground size-4 shrink-0" />
+                  <Icon name="user" className="text-muted-foreground size-4 shrink-0" />
                   <div>
                     <dt className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                       Admin

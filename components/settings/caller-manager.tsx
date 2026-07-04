@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { UserRoundPlus, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Icon, Spinner } from "@/components/icons";
 import { createCaller } from "@/app/caller/actions";
 
 /**
@@ -72,7 +72,7 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
           disabled={pending || name.trim().length < 2 || pin.length !== 4}
           className="bg-primary text-primary-foreground inline-flex h-10 items-center gap-1.5 rounded-full px-5 text-xs font-bold disabled:opacity-40"
         >
-          {pending ? <Loader2 className="size-3.5 animate-spin" /> : <UserRoundPlus className="size-3.5" />}
+          {pending ? <Spinner className="size-3.5 animate-spin" /> : <Icon name="user-plus" className="size-3.5" />}
           Register
         </button>
       </div>
@@ -83,7 +83,7 @@ export function CallerManager({ callers }: { callers: { id: string; name: string
             msg.ok ? "text-[var(--team-2)]" : "text-destructive"
           }`}
         >
-          {msg.ok ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+          {msg.ok ? <Icon name="success" className="size-4" /> : <Icon name="error" className="size-4" />}
           {msg.text}
         </p>
       )}

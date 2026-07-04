@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Icon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -86,7 +86,7 @@ export function ListFilters({ tabs, teams, searchPlaceholder = "Search name or p
       </Select>
 
       <div className="relative ml-auto w-full sm:w-60">
-        <Search className="text-muted-foreground absolute top-1/2 left-3.5 size-4 -translate-y-1/2" />
+        <Icon name="search" className="text-muted-foreground absolute top-1/2 left-3.5 size-4 -translate-y-1/2" />
         <input
           value={q}
           onChange={(e) => {
