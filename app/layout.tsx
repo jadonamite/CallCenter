@@ -4,7 +4,8 @@ import { ThemeProvider } from "next-themes";
 import { Sidebar } from "@/components/shell/sidebar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { buildTree, getGroups } from "@/lib/groups";
-import { generateContacts, PLAN_DAYS, PLAN_TARGET, TODAY_INDEX } from "@/lib/data";
+import { PLAN_DAYS, PLAN_TARGET, TODAY_INDEX } from "@/lib/data";
+import { loadContacts } from "@/lib/live-data";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -28,7 +29,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const groups = await getGroups();
-  const contacts = generateContacts(buildTree(groups));
+  const contacts = await loadContacts(buildTree(groups));
   const reached = contacts.filter((c) => c.contactedDay !== null).length;
   const daysLeft = Math.max(PLAN_DAYS - TODAY_INDEX - 1, 0);
 

@@ -1,9 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { LIVE_EVENT_ID } from "@/lib/events";
 import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
+import { resolveActiveEventId } from "@/lib/live-data";
 
 export interface SaveContactsInput {
   groupId: string;
@@ -59,11 +58,11 @@ export async function saveContacts(input: SaveContactsInput): Promise<SaveContac
     return { ok: false, saved: 0, skipped, error: "No valid rows to save." };
   }
 
-  const store = await cookies();
-  const eventId = store.get("active_event")?.value ?? LIVE_EVENT_ID;
+  // Resolve the active event to its persisted id so saves land on the real event.
+  const eventId = outreachWired() ? await resolveActiveEventId() : null;
 
-  // Live persistence — only for a real event id; demo ids stay on the stub.
-  if (outreachWired() && isObjectId(eventId)) {
+  // Live persistence — only when wired and the event exists; else the demo stub.
+  if (eventId && isObjectId(eventId)) {
     try {
       const data = await outreachFetch("/api/outreach/contacts", {
         method: "POST",

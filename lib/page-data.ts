@@ -1,12 +1,13 @@
 import { ancestryMap, buildTree, getGroups } from "./groups";
 import { teamColorMap } from "./team-colors";
-import { generateContacts, groupRollup } from "./data";
+import { groupRollup } from "./data";
+import { loadContacts } from "./live-data";
 
 /** Shared server-side assembly used by every page. */
 export async function loadAppData() {
   const groups = await getGroups();
   const roots = buildTree(groups);
-  const contacts = generateContacts(roots);
+  const contacts = await loadContacts(roots);
   const rollup = groupRollup(groups, roots, contacts);
   const teamColorOf = teamColorMap(groups);
 

@@ -18,7 +18,6 @@ import { teamColorMap } from "@/lib/team-colors";
 import {
   dailySeries,
   dueFollowups,
-  generateContacts,
   groupRollup,
   outcomeBreakdown,
   paceSeries,
@@ -27,6 +26,7 @@ import {
   PLAN_WEEKS,
   TODAY_INDEX,
 } from "@/lib/data";
+import { loadContacts } from "@/lib/live-data";
 
 export default async function DashboardPage() {
   const store = await cookies();
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
 
   const groups = await getGroups();
   const roots = buildTree(groups);
-  const contacts = generateContacts(roots);
+  const contacts = await loadContacts(roots);
 
   const daily = dailySeries(contacts);
   const pace = paceSeries(daily);
