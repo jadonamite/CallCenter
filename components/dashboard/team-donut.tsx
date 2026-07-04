@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import type { OutcomeSlice } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 export interface TeamSlice {
   id: string;
@@ -19,6 +20,8 @@ export interface TeamSlice {
 interface Props {
   teams: TeamSlice[];
   outcomes: OutcomeSlice[];
+  /** bigger, bolder rendering — used for the standalone downloadable report */
+  large?: boolean;
 }
 
 const OUTCOME_COLORS: Record<string, string> = {
@@ -28,7 +31,7 @@ const OUTCOME_COLORS: Record<string, string> = {
   not_contacted: "var(--chart-5)",
 };
 
-export function TeamDonut({ teams, outcomes }: Props) {
+export function TeamDonut({ teams, outcomes, large = false }: Props) {
   const total = teams.reduce((n, t) => n + t.total, 0);
   const config = Object.fromEntries(
     teams.map((t) => [t.id, { label: t.name, color: t.color }])
@@ -38,22 +41,22 @@ export function TeamDonut({ teams, outcomes }: Props) {
 
   return (
     <div className="card-soft bg-card flex h-full min-w-0 flex-col rounded-3xl p-5 sm:p-6">
-      <h2 className="text-base font-bold">Collation by team</h2>
-      <p className="text-muted-foreground mt-0.5 text-xs">
+      <h2 className={cn("font-bold", large ? "text-xl" : "text-base")}>Collation by team</h2>
+      <p className={cn("text-muted-foreground mt-0.5", large ? "text-sm" : "text-xs")}>
         Every contact credited to the team that brought it
       </p>
 
       <div className="mt-2 flex min-w-0 flex-wrap items-center justify-center gap-4 sm:gap-5">
         <div className="relative shrink-0">
-          <ChartContainer config={config} className="aspect-square h-[172px]">
+          <ChartContainer config={config} className={cn("aspect-square", large ? "h-[252px]" : "h-[172px]")}>
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="id" hideLabel />} />
               <Pie
                 data={data}
                 dataKey="total"
                 nameKey="id"
-                innerRadius={56}
-                outerRadius={82}
+                innerRadius={large ? 84 : 56}
+                outerRadius={large ? 122 : 82}
                 paddingAngle={3}
                 cornerRadius={6}
                 strokeWidth={0}
@@ -62,19 +65,19 @@ export function TeamDonut({ teams, outcomes }: Props) {
             </PieChart>
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl leading-none font-bold tabular-nums">
+            <span className={cn("leading-none font-bold tabular-nums", large ? "text-4xl" : "text-xl")}>
               {total.toLocaleString()}
             </span>
-            <span className="text-muted-foreground mt-0.5 text-[9px] font-bold tracking-widest uppercase">
+            <span className={cn("text-muted-foreground mt-0.5 font-bold tracking-widest uppercase", large ? "text-[11px]" : "text-[9px]")}>
               people
             </span>
           </div>
         </div>
-        <ul className="min-w-[200px] flex-1 space-y-2.5">
+        <ul className={cn("min-w-[200px] flex-1", large ? "space-y-3.5" : "space-y-2.5")}>
           {data.map((t) => (
-            <li key={t.id} className="flex min-w-0 items-center gap-2 text-sm">
+            <li key={t.id} className={cn("flex min-w-0 items-center gap-2", large ? "text-base" : "text-sm")}>
               <span
-                className="size-2.5 shrink-0 rounded-full"
+                className={cn("shrink-0 rounded-full", large ? "size-3" : "size-2.5")}
                 style={{ background: t.color }}
               />
               <span className="text-muted-foreground truncate font-medium">
@@ -83,7 +86,7 @@ export function TeamDonut({ teams, outcomes }: Props) {
               <span className="ml-auto shrink-0 font-bold tabular-nums">
                 {t.total.toLocaleString()}
               </span>
-              <span className="text-muted-foreground w-9 shrink-0 text-right text-xs tabular-nums">
+              <span className={cn("text-muted-foreground shrink-0 text-right tabular-nums", large ? "w-11 text-sm" : "w-9 text-xs")}>
                 {total ? Math.round((t.total / total) * 100) : 0}%
               </span>
             </li>
@@ -92,10 +95,10 @@ export function TeamDonut({ teams, outcomes }: Props) {
       </div>
 
       <div className="mt-auto pt-4">
-        <p className="text-muted-foreground mb-2 text-[10px] font-bold tracking-widest uppercase">
+        <p className={cn("text-muted-foreground mb-2 font-bold tracking-widest uppercase", large ? "text-xs" : "text-[10px]")}>
           Contact outcomes
         </p>
-        <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full">
+        <div className={cn("flex w-full gap-0.5 overflow-hidden rounded-full", large ? "h-4" : "h-3")}>
           {outcomes.map((o) => (
             <div
               key={o.outcome}
@@ -106,11 +109,11 @@ export function TeamDonut({ teams, outcomes }: Props) {
             />
           ))}
         </div>
-        <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5">
+        <div className={cn("mt-2.5 grid grid-cols-2 gap-x-3", large ? "gap-y-2" : "gap-y-1.5")}>
           {outcomes.map((o) => (
-            <span key={o.outcome} className="flex items-center gap-1.5 text-xs">
+            <span key={o.outcome} className={cn("flex items-center gap-1.5", large ? "text-sm" : "text-xs")}>
               <span
-                className="size-2 rounded-full"
+                className={cn("rounded-full", large ? "size-2.5" : "size-2")}
                 style={{ background: OUTCOME_COLORS[o.outcome] }}
               />
               <span className="text-muted-foreground">{o.label}</span>

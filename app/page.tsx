@@ -8,7 +8,10 @@ import { StatCards, type Stat } from "@/components/dashboard/stat-cards";
 import { OutreachChart } from "@/components/dashboard/outreach-chart";
 import { TeamDonut, type TeamSlice } from "@/components/dashboard/team-donut";
 import { Leaderboard } from "@/components/dashboard/leaderboard";
-import { CollationReport } from "@/components/dashboard/collation-report";
+import {
+  CollationReportProvider,
+  CollationDownloadButton,
+} from "@/components/dashboard/collation-report";
 import { FollowupTable } from "@/components/dashboard/followup-table";
 import { ancestryMap, buildTree, getGroups } from "@/lib/groups";
 import { teamColorMap } from "@/lib/team-colors";
@@ -163,28 +166,31 @@ export default async function DashboardPage() {
 
       <StatCards stats={stats} />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="min-w-0 lg:col-span-2">
-          <OutreachChart daily={daily} pace={pace} planWeeks={PLAN_WEEKS} />
+      <CollationReportProvider
+        eventName={activeEvent.name}
+        dateLabel={fmtEventDay(activeEvent)}
+        teams={teamSlices}
+        outcomes={outcomes}
+        rollup={rollup}
+        teamColorOf={teamColorOf}
+      >
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="min-w-0 lg:col-span-2">
+            <OutreachChart daily={daily} pace={pace} planWeeks={PLAN_WEEKS} />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <TeamDonut teams={teamSlices} outcomes={outcomes} />
+            <div className="flex justify-end">
+              <CollationDownloadButton kind="collation" label="Download collation" />
+            </div>
+          </div>
         </div>
-        <div className="min-w-0">
-          <TeamDonut teams={teamSlices} outcomes={outcomes} />
+
+        <Leaderboard rows={rollup} teamColorOf={teamColorOf} viewAllHref="/teams" />
+        <div className="flex justify-end">
+          <CollationDownloadButton kind="standings" label="Download standings" />
         </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-bold">Collation &amp; standings</h2>
-        <CollationReport
-          eventName={activeEvent.name}
-          dateLabel={fmtEventDay(activeEvent)}
-          teams={teamSlices}
-          outcomes={outcomes}
-          rollup={rollup}
-          teamColorOf={teamColorOf}
-        />
-      </div>
-
-      <Leaderboard rows={rollup} teamColorOf={teamColorOf} viewAllHref="/teams" />
+      </CollationReportProvider>
 
       <FollowupTable
         rows={due.slice(0, 10)}
