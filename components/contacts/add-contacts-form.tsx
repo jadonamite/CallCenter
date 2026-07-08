@@ -21,9 +21,18 @@ interface ParsedRow {
   reason?: string;
 }
 
+/** A Nigerian mobile number, tolerant of spaces and a +234 prefix. */
+const PHONE_RE = /(\+?234\d[\d\s]{8,12}|0\d[\d\s]{9,13})/;
+/** A caller's leading list index — "12.", "5)", "3 -", "18  " — never a name. */
+const SERIAL_RE = /^\s*\d{1,3}(?:[.)\-]\s*|\s+)/;
+const trimSep = (s: string) => s.replace(/^[,\-–\s]+/, "").replace(/[,\-–\s]+$/, "").trim();
+
 /**
  * accepts "Name, 080…", "Name - 080…", or "Name 080…" one per line, with an
- * optional trailing location: "Name, 080…, New Hostel".
+ * optional trailing location: "Name, 080…, New Hostel". Also tolerates the two
+ * things callers keep pasting: a leading list number ("12. Name 080…") and the
+ * number before the name ("12. 080… Name"). The phone is located first so a
+ * spaced number is never mistaken for a serial or split.
  */
 function parseLines(text: string): ParsedRow[] {
   return text
@@ -31,11 +40,21 @@ function parseLines(text: string): ParsedRow[] {
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line) => {
-      const m = line.match(/^(.*?)[,\-–\s]+(\+?\d[\d\s]{7,15})(?:[,\-–\s]+(.*))?$/);
-      if (!m) return { name: line, phone: "", location: "", valid: false, reason: "no phone found" };
-      const name = m[1].trim().replace(/[,\-–]+$/, "").trim();
-      const phone = m[2].replace(/\s/g, "").replace(/^\+234/, "0");
-      const location = (m[3] ?? "").trim().replace(/[,\-–]+$/, "").trim().slice(0, 80);
+      const pm = line.match(PHONE_RE);
+      if (!pm) return { name: line, phone: "", location: "", valid: false, reason: "no phone found" };
+      const phone = pm[0].replace(/\s/g, "").replace(/^\+?234/, "0");
+
+      // Text before the phone is the name (drop any leading list index); text
+      // after is the location. If nothing usable precedes the phone, the caller
+      // wrote "index phone Name" — recover the name from after the number.
+      let name = trimSep(line.slice(0, pm.index).replace(SERIAL_RE, ""));
+      let location = trimSep(line.slice(pm.index! + pm[0].length));
+      if (name.length < 2 && location) {
+        name = location.replace(SERIAL_RE, "").trim();
+        location = "";
+      }
+      location = location.slice(0, 80);
+
       if (name.length < 2)
         return { name, phone, location, valid: false, reason: "name missing" };
       if (!/^0\d{10}$/.test(phone))
