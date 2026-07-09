@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
 import { resolveActiveEventId } from "@/lib/live-data";
 
@@ -68,6 +68,7 @@ export async function saveContacts(input: SaveContactsInput): Promise<SaveContac
         method: "POST",
         body: { eventId, groupId, broughtBy: broughtBy.trim(), contacts: clean },
       });
+      revalidateTag("outreach", "max");
       revalidatePath("/contacts");
       revalidatePath("/");
       // The API re-dedupes against contacts already on the event; add its skips.

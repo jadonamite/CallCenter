@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import type { CallOutcome, Channel, Disposition } from "@/lib/outreach";
 import { CALL_OUTCOMES } from "@/lib/outreach";
 import { outreachWired, isObjectId, outreachFetch } from "@/lib/outreach-api";
@@ -56,6 +56,9 @@ export async function logOutcome(input: LogOutcomeInput): Promise<LogOutcomeResu
     }
   }
 
+  // Invalidate the cached contact/log reads once, then refresh the rendered
+  // routes so the new attempt shows without a full app-wide refetch.
+  revalidateTag("outreach", "max");
   revalidatePath("/contacts");
   revalidatePath("/follow-ups");
   revalidatePath("/");
@@ -83,6 +86,7 @@ export async function deleteContact(id: string): Promise<DeleteContactResult> {
       return { ok: false, error: (e as Error).message };
     }
   }
+  revalidateTag("outreach", "max");
   revalidatePath("/contacts");
   revalidatePath("/follow-ups");
   revalidatePath("/");

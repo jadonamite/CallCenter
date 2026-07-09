@@ -31,16 +31,42 @@ interface LiveLog {
   outcome: string;
 }
 
-async function apiGet<T>(path: string): Promise<T | null> {
+/** A read must never freeze the page: stop waiting after this and fall back. */
+const READ_TIMEOUT_MS = 7000;
+
+/**
+ * Cached, timeout-guarded GET.
+ *
+ * Reads are cached in the Data Cache (SWR) and revalidated on demand via
+ * `revalidateTag` after a write, so navigation serves from cache instead of a
+ * fresh round-trip on the caller's weak link. A `Promise.race` timeout unblocks
+ * render if the network stalls — the request keeps warming the cache in the
+ * background, but the page never hangs on it. Any failure falls back to null.
+ */
+async function apiGet<T>(
+  path: string,
+  opts?: { revalidate?: number; tags?: string[] }
+): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // Keep a handle so a rejection AFTER the timeout wins the race stays handled.
+  const req = fetch(`${process.env.OUTREACH_API}${path}`, {
+    headers: { authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
+    next: { revalidate: opts?.revalidate ?? 30, tags: opts?.tags ?? ["outreach"] },
+  });
+  req.catch(() => {}); // background failure (post-timeout) — never unhandled
   try {
-    const res = await fetch(`${process.env.OUTREACH_API}${path}`, {
-      headers: { authorization: `Bearer ${process.env.OUTREACH_API_KEY}` },
-      cache: "no-store",
-    });
+    const res = await Promise.race([
+      req,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("read timeout")), READ_TIMEOUT_MS);
+      }),
+    ]);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
     return null;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -54,7 +80,10 @@ export async function resolveActiveEventId(): Promise<string | null> {
   if (!outreachWired()) return null;
   const store = await cookies();
   const active = getEvent(store.get("active_event")?.value);
-  const events = await apiGet<{ id: string; name: string }[]>("/api/outreach/events");
+  const events = await apiGet<{ id: string; name: string }[]>("/api/outreach/events", {
+    revalidate: 300,
+    tags: ["outreach-events"],
+  });
   return events?.find((e) => e.name === active.name)?.id ?? null;
 }
 
