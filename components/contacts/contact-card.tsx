@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/icons";
 import { PhoneSolidIcon } from "@/components/icons/brand";
-import { spring } from "@/lib/motion";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { LogCallDialog } from "./log-call-dialog";
 import { DeleteContactButton } from "./delete-contact-button";
@@ -23,7 +22,6 @@ export function ContactCard({
   lastContact,
   eventName,
   inviteTemplate,
-  index = 0,
   isAdmin = false,
 }: {
   contact: { id: string; name: string; phone: string; broughtBy: string; location?: string | null };
@@ -33,7 +31,6 @@ export function ContactCard({
   lastContact: string;
   eventName: string;
   inviteTemplate?: string;
-  index?: number;
   isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -53,9 +50,9 @@ export function ContactCard({
           // Gate: must be signed in as a caller before logging a call.
           if (requireCaller()) setOpen(true);
         }}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: Math.min(index, 12) * 0.035 }}
+        // No entry animation: the list re-mounts on every filter/tab/search
+        // navigation, so a staggered fade-in would replay each tap and read as
+        // jank. Cards appear instantly; whileTap keeps the touch feedback.
         whileTap={{ scale: 0.98 }}
         className="card-soft bg-card active:bg-secondary/40 flex w-full items-center gap-3 rounded-2xl p-3.5 text-left transition-colors"
       >

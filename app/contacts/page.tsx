@@ -111,10 +111,9 @@ export default async function ContactsPage({
             No contacts match these filters.
           </p>
         )}
-        {pageRows.map((c, i) => (
+        {pageRows.map((c) => (
           <ContactCard
             key={c.id}
-            index={i}
             contact={{ id: c.id, name: c.name, phone: c.phone, broughtBy: c.broughtBy, location: c.location }}
             origin={originOf[c.groupId] ?? "—"}
             color={colorOf[c.groupId]}

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Icon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +32,9 @@ export function ListFilters({ tabs, teams, searchPlaceholder = "Search name or p
   const team = params.get("team") ?? "all";
   const [q, setQ] = useState(params.get("q") ?? "");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mark filter navigations as transitions: React keeps the current list
+  // interactive and lets us show a pending cue instead of freezing on tap.
+  const [isPending, startTransition] = useTransition();
 
   function push(next: Record<string, string | null>) {
     const p = new URLSearchParams(params.toString());
@@ -40,7 +43,9 @@ export function ListFilters({ tabs, teams, searchPlaceholder = "Search name or p
       else p.set(k, v);
     }
     p.delete("page"); // any filter change resets pagination
-    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+    });
   }
 
   useEffect(() => {
@@ -50,7 +55,13 @@ export function ListFilters({ tabs, teams, searchPlaceholder = "Search name or p
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
+    <div
+      aria-busy={isPending}
+      className={cn(
+        "flex flex-wrap items-center gap-2.5",
+        isPending && "opacity-70 transition-opacity"
+      )}
+    >
       {tabs && (
         <div className="scroll-x -mx-1 flex gap-1.5 px-1">
           {tabs.map((t) => (

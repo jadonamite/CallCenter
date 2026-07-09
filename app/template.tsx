@@ -15,7 +15,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ ...softSpring, opacity: { duration: 0.25 } }}
+        transition={{ ...softSpring, opacity: { duration: 0.12 } }}
       >
         {children}
       </motion.div>
