@@ -10,15 +10,13 @@ import { NAV_ITEMS, isActive } from "./nav-items";
 import { logout } from "@/app/login/actions";
 
 interface Props {
-  reached: number;
-  target: number;
-  daysLeft: number;
   identity?: { role: string; name?: string } | null;
+  /** The event-progress card, streamed in via Suspense so it never blocks the shell. */
+  progress?: React.ReactNode;
 }
 
-export function Sidebar({ reached, target, daysLeft, identity }: Props) {
+export function Sidebar({ identity, progress }: Props) {
   const pathname = usePathname();
-  const pct = Math.min(Math.round((reached / target) * 100), 100);
 
   return (
     <aside className="bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-40 hidden w-16 flex-col border-r md:flex lg:w-60">
@@ -91,28 +89,7 @@ export function Sidebar({ reached, target, daysLeft, identity }: Props) {
         )}
       </div>
 
-      <div className="hidden p-4 lg:block">
-        <div className="bg-secondary/60 rounded-2xl p-4">
-          <p className="text-[10px] font-bold tracking-widest uppercase opacity-60">
-            Event in {daysLeft} day{daysLeft === 1 ? "" : "s"}
-          </p>
-          <p className="mt-2 text-lg leading-none font-bold tabular-nums">
-            {reached.toLocaleString()}
-            <span className="text-muted-foreground text-xs font-semibold">
-              {" "}/ {target.toLocaleString()}
-            </span>
-          </p>
-          <div className="bg-background mt-3 h-2 w-full overflow-hidden rounded-full">
-            <div
-              className="bg-primary h-full rounded-full"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <p className="text-muted-foreground mt-2 text-xs font-medium">
-            {pct}% of reach target
-          </p>
-        </div>
-      </div>
+      {progress && <div className="hidden p-4 lg:block">{progress}</div>}
     </aside>
   );
 }

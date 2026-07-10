@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Sidebar } from "@/components/shell/sidebar";
+import { SidebarProgress, SidebarProgressSkeleton } from "@/components/shell/sidebar-progress";
 import { BottomNav } from "@/components/shell/bottom-nav";
-import { buildTree, getGroups } from "@/lib/groups";
-import { loadContacts, activePlanWindow } from "@/lib/live-data";
 import { getSession } from "@/lib/auth";
 import "./globals.css";
 
@@ -28,11 +28,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const groups = await getGroups();
-  const plan = await activePlanWindow();
-  const contacts = await loadContacts(buildTree(groups));
-  const reached = contacts.filter((c) => c.contactedDay !== null).length;
-  const daysLeft = Math.max(plan.days - plan.todayIndex - 1, 0);
   const session = await getSession();
   const identity = session
     ? { role: session.role, name: session.role === "caller" ? session.name : undefined }
@@ -46,7 +41,14 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <Sidebar reached={reached} target={plan.target} daysLeft={daysLeft} identity={identity} />
+          <Sidebar
+            identity={identity}
+            progress={
+              <Suspense fallback={<SidebarProgressSkeleton />}>
+                <SidebarProgress />
+              </Suspense>
+            }
+          />
           <div className="flex-1 pb-24 md:pb-0 md:pl-16 lg:pl-60">{children}</div>
           <BottomNav />
         </ThemeProvider>
